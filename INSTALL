@@ -1,6 +1,8 @@
 
 Please use
 
-pip install htms_obj
+pip install -i htms_low_api
+pip install -i htms_mid_api
+pip install -i htms_obj
 
 and report errors to Arslan Aliev (arslanaliev@yahoo.com)
