@@ -32,6 +32,7 @@ on the Django framework, which can connect to any server regardless
 of applications (functionally close to the PgAdmin web utility for PostgeSQL);
 
 Full description: 
+
 https://medium.com/@azur06400/the-tabular-network-model-for-database-management-af086edad4c
 https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa
 https://medium.com/@azur06400/tabular-network-data-model-part-2-important-features-99a07f514b4
