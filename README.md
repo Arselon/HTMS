@@ -38,7 +38,7 @@ https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-defin
 https://medium.com/@azur06400/tabular-network-data-model-part-2-important-features-99a07f514b4
 https://medium.com/@azur06400/hypertable-management-system-htms-for-tabular-network-databases-1e9ef617f0ad
 
-#### Copyright 2018-2021 Arslan S. Aliev http://arslan-aliev.com
+#### Copyright 2018-2021 Arslan S. Aliev
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
 you may not use this software except in compliance with the License. 
