@@ -1,6 +1,6 @@
 
 Please use
 
-pip install -i https://test.pypi.org/simple/ htms_mid_api
+pip install -i htms_mid_api
 
 and report errors to Arslan Aliev (arslanaliev@yahoo.com)
