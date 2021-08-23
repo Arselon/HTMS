@@ -32,10 +32,10 @@ on the Django framework, which can connect to any server regardless
 of applications (functionally close to the PgAdmin web utility for PostgeSQL);
 
 Full description: 
-https://medium.com/codex/the-tabular-network-model-for-database-management-af086edad4c
-https://medium.com/codex/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa
-https://medium.com/codex/tabular-network-data-model-part-2-important-features-99a07f514b4
-https://medium.com/codex/hypertable-management-system-htms-for-tabular-network-databases-1e9ef617f0ad
+https://medium.com/@azur06400/the-tabular-network-model-for-database-management-af086edad4c
+https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa
+https://medium.com/@azur06400/tabular-network-data-model-part-2-important-features-99a07f514b4
+https://medium.com/@azur06400/hypertable-management-system-htms-for-tabular-network-databases-1e9ef617f0ad
 
 #### Copyright 2018-2021 Arslan S. Aliev http://arslan-aliev.com
 
