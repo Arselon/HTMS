@@ -1,33 +1,34 @@
-
-## Tabular network data model
+## Tabular network database
+## &nbsp;
+##### _Tags: tabular network database, hypertable, HT, HTMS, object-oriented software, nosql, python_
+## &nbsp;
+### This project is a new, original approach to building data models and implementing software at the junction of the concepts of relational DBMS, network DBMS and the object-relational mapping (ORM) concept. The new data model was called a "Tabular Network". Tabular network database may be of interest in subject areas in which existing SQL and NoSQL systems are not always effective: in AI, in big data processing, in adaptive applications with self-modifying database structures, in embedded systems etc.
+## &nbsp;
+### Tabular network database (TNDB) or the **hypertable** (HT) - is a new type of databases.
+### &nbsp;
+The hypertable is a system of cross-referenced tables:
+- records are grouped into tables, and all records (rows) in the same table have the same set of fields (columns); 
+- tables do not have headings: the set of columns of any table is a certain subset of common hypertable's attributes, i.e tabular structures in HT are defined as projections of a common attribute set;
+- there are two disjoint attribute classes:   
+    * attributes, called **data type attributes - DTA**, define fields with self-defined data values;
+    * attributes, called **reference type attributes - RTA**, define fields with values that are interpreted as links to rows in tables and represent their physical address pairs (_table number_, _row number_), i.e. the values of RTA fields in the rows of the tables are explicit links to any rows in any tables in the hypertable;
+- field values can be not only atomic, but also sets. 
+### &nbsp;
+The first functionally complete implementation of the TNDB application programming interface (API) was called the **HyperTable Management System - HTMS**.
 ####
-This project is a new, original approach to building data models 
-and implementing software at the junction of the concepts of relational DBMS, 
-network DBMS and the object-relational mapping (ORM) concept. The new 
-data model was called a "Tabular Network". 
+Simplicity was one of the main goals of creating HTMS. Using the HTMS is no more complicated than the APIs of well-known ORMs such as Django ORM. But the tabular network model is much closer to the real world than the relational model, so to design the databases easier.
 ####
-Tabular Network DBMS may be of interest in subject areas in which existing SQL
-and NoSQL systems are not always effective: in big data processing, in adaptive
-applications with self-modifying database structures, in embedded systems etc.
-The first functionally complete implementation of the API was called 
-the HyperTable Management System (HTMS).
-####
-Simplicity was one of the main goals of creating HTMS. Using the HTMS API 
-is no more complicated than the APIs of well-known ORMs such as Django. 
-But the tabular network model is much closer to the real world than 
-the relational model, so to design the databases easier.
-####
-Full description of the tabular network data model and HTMS on `medium.com` website:
+Full description of the tabular network data model see on `medium.com` website:
 - **[The tabular network model for database management](
 https://medium.com/@azur06400/the-tabular-network-model-for-database-management-af086edad4c)** 
 - **[Tabular network data model. Part 1. Conceptual definition](https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa)** 
 - **[Tabular network data model. Part 2. Important features](https://medium.com/@azur06400/tabular-network-data-model-part-2-important-features-99a07f514b4)** 
 - **[Hypertable Management System (HTMS) for tabular network databases](
 https://medium.com/@azur06400/hypertable-management-system-htms-for-tabular-network-databases-1e9ef617f0ad)**
-####
-The HTMS includes the following levels and packages (see Fig. 5):
-- The "**object-level**" of the HTMS application programming interface (API) includes `HT_Obj` class for creating the HT objects, and `Obj_RAM` class for mapping (transforming) objects to/from the rows of tables. The main functional class at this level is `Obj_RAM`, the methods of which provide the basic operations for manipulating, searching and filtering data, which are similar in results to the objects method in the ORM;
-- The "**mid-level**" of the HTMS API is a set of classes and functions that form the basis for object-level: for organizing HT structures in general as well as models of individual tables (an analog of the `models` in Django ORM), for support common operations with the attributes, tables, rows and fields (create, change, delete etc.) and for formation search waves;
+### &nbsp;
+The HTMS includes the following levels and packages:
+- The "**object-level**" of the HTMS includes `HT_Obj` class for creating the HT objects, and `Obj_RAM` class for mapping (transforming) objects to/from the rows of tables. The main functional class at this level is `Obj_RAM`, the methods of which provide the basic operations for manipulating, searching and filtering data, which are similar in results to the `objects` methods in the ORM;
+- The "**mid-level**" of the HTMS API is a set of classes and functions that form the basis for object-level: for organizing HT structures in general as well as models of individual tables (an analog of the `models` in Django ORM) and support common operations with the attributes, tables, rows and fields (create, change, delete etc.) and for formation search waves;
 - The "**low-level**" HTMS API is a set of classes and utility functions - the basis for the mid-level and object-level;
 - The "**file-level**" HTMS API is a subsystem `Cage` of remote cached access to database files on servers on the network (description see **[github.com/Arselon/Cage](https://github.com/Arselon/Cage)**).
 ####
@@ -38,6 +39,7 @@ For most applications, using _object-level_ and _mid-level_ classes and function
 _Low-level_ and  _file-level_ - for advanced developers if they want to get inside the HTMS technology. Both of them together are a **physical level** of the HTMS.
 Packages are available on PyPI: `htms-low-api` and `cage`. 
 ## 
+
 
 #### _Copyright 2018-2021 [Arslan S. Aliev](http://www.arslan-aliev.com)_
 
