@@ -16,6 +16,18 @@ It is the database information core and contains metadata:
   * MAF descriptors containing their structure, number of rows; 
   * as well as other information. 
 
+###  HT descriptor
+
+|Component|Data structure|Structural element|Functionality|
+|-----------|----------|----------|----------|
+|`a_free`	|Long integer		||af length|
+|`b_free`	|Long integer		||bf length|
+|`c_free`	|Long integer		||cf length|
+|`attrs` `[attr_number]`	|Dictionary	|{`name`, `type`}| 	HT attribute descriptor, where: `name` - the name (symbolic id) of the attribute, `type` - attribute data type (see table below)|
+|`mafs` `[maf_number]`	|Dictionary	|{`name`, `rows`}	|MAF descriptor, where:  `name` - the symbolic identifier of the table, `rows` - the count of rows in the table|
+|`models` `[maf_number]` `[attr_number]`|	2D Boolean array (matrix)|	`0` or `1`	|Sets the correspondence between the attributes of the HT and the columns of the tables| 
+|`relations` `[attr_number]`	|Dictionary	|"whole", "multipart", "cause"	|Defines the semantic type of attribute (see [Tabular network data model. Conceptual definition](https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa)|
+
 ### **af** file
 
 A shared storage for variable length data arrays. Arrays can be: byte strings,
@@ -68,7 +80,7 @@ Physical row numbers can obviously change when you delete old or insert (not at 
 `byte4` |  byte array (4) | 4 | 4 | b'\x00'*4 |  
 `byte8` |  byte array (8) | 8 | 8 | b'\x00'*8 |   
 `int4` |  integer | 4 | 4 | 2147483647(*) |   
-`int8` |  doble integer | 8 | 8 | 9223372036854775807(**) |  
+`int8` |  long integer | 8 | 8 | 9223372036854775807(**) |  
 `float4` |  float | 4	| 4 | float('nan') | 
 `float8` |  double float | 8	| 8 | float('nan') |  
 `utf50` |  UTF-8 string (without BOM) - up to 50 characters | 100 | 100 | b'\xFF'*100 |   
@@ -127,7 +139,7 @@ It is used in the file servers to identify client applications. It is passed to 
   * _False_ \- (by default);  
 - `zmq_context` ( _bool_ or _object_ ) - (by default _False_) Python bindings for ZeroMQ (see https://pyzmq.readthedocs.io/en/latest/api/zmq.html,  which means the ZeroMQ context will be created in the Cage object itself). Used to optimize the system, this parameter can be left _False_. 
 ### Attributes 
-The main data structure with HT attributes is its descriptor except dictionary `relations`. During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
+The main data structure with HT attributes (`a_free`, `b_free`, `c_free`, `attrs`, `mafs`, `models`) is its descriptor (see above) except dictionary `relations`. During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
 
 Attributes, which used only in the instances and not saved in files:
 
