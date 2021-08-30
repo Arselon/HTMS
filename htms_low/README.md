@@ -1,9 +1,23 @@
 # The low (physical) level of the HTMS
-##  Files structure
 ### &nbsp;
-The HTMS database includes:
-  * four system files, which we will call the files **htd, af, bf** and **cf** ; and
-  * a set of files for tables, which we will call the **multi-attribute file - MAF**
+### Tags: _HTMS, low-level api_
+### &nbsp;
+##  Functionality:
+  * creating or opening database - as an instance of a hypertable in RAM at the physical level;
+  * CRUDE (create, read, update and delete) operations at the physical level with attributes, tables, with rows in tables, with data and links in the fields;
+  * operations with entire HT (as sets of the files on servers): renaming, copying, compressing, removing. 
+##  Structure
+  PyPI package `htms-low-api` includes modules:
+-    `data_types.py` - contains class `Types_htms` describing all internal (embedded) HTMS data types;
+-    `funcs.py` - contains system function `match` for searching (filtering) table rows with accordance of match patterns and service finctions `links_dump` and `ht_dump` for degugging printing;
+-    `ht.py` - contains class `HT`;
+-    `maf.py` - contains class `MAF`;
+-    `htms_par_low.py` - contains main system parameters and options for tuning `Cage` class objects, settings for low level debugging,  and class `HTMS_low_Err` for error processing, derived class from `Exception` system class. 
+##  HT files structure
+### &nbsp;
+The HT database OS files includes:
+  * four system files, which we will call the files **htd**, **af**, **bf** and **cf** ; and
+  * a set of files for tables (one file - one table), which we will call the **multi-attribute file - MAF**.
 
 The first characters in the names of all files are the same - this is the symbolic name of the HT (database). The names of system files and the extensions of their file name are the same (for example, in the base database, the htd file will be named base.htd).
 
@@ -112,9 +126,7 @@ Notes :
 ## Class `HT`
 ### `(server_ip="", ht_root="", ht_name="", cage_name="", ext={}, new=False, jwtoken="", zmq_context=False, from_subclass=False, mode='wm')`
 #### &nbsp;
-This is the first base class for creating HTs and working with them. When
-initializing each object of the HT class using the method weakref.ref(self)
-creates a weak link to it to be able to look for all open HTs in the RAM. The
+This is the first base class for creating HTs and working with them. When initializing each object of the HT class using the method weakref.ref(self) creates a weak link to it to be able to look for all open HTs in the RAM. The
 class can be used at the physical layer of HTMS.
 ### Required parameters
 - `server_ip` ( _str_ ) - IP address (or DNS) of the file server with the HT;  
@@ -152,6 +164,8 @@ Attributes, which used only in the instances and not saved in files:
 ### `getinstances` 
 #### `()`
 Class instances generator.
+#### Y i e l d s
+- HT instance object
 #### &nbsp;
 ### `close` 
 #### `(Kerr=[])`
@@ -269,6 +283,8 @@ When creating or changing the structure of an MAF (a set of fields from a variet
 ### `getinstances` 
 #### `()`
 Class instances generator.
+#### Y i e l d s
+- MAF instance object
 #### &nbsp;
 ### `rename` 
 #### `(Kerr=[], new_maf_name='')`
@@ -521,5 +537,5 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 
-#####  htms_low API v.2.3.1, readme.md red. 16.07.2021
+#####  htms_low API v.2.3.1, readme.md red. 30.08.2021
 
