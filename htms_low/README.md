@@ -123,7 +123,7 @@ Notes :
 #### &nbsp;
 ## Main classes of HTMS low level API
 #### &nbsp;
-## Class `HT`
+## Class **`HT`**
 ### `(server_ip="", ht_root="", ht_name="", cage_name="", ext={}, new=False, jwtoken="", zmq_context=False, from_subclass=False, mode='wm')`
 #### &nbsp;
 This is the first base class for creating HTs and working with them. When initializing each object of the HT class using the method weakref.ref(self) creates a weak link to it to be able to look for all open HTs in the RAM. The
@@ -145,29 +145,29 @@ It is used in the file servers to identify client applications. It is passed to 
 - `new` ( _bool_ ): 
   * _True_ \- a new database is created as a set of files; 
   * _False_ \- (by default), the existing database "opens”, that is, its files are opened, and an object instance of this class is created based on the information in them;  
-- `ext` (_dict_) - dictionary with file extensions for all HTMS file types (by default `{"maf":".maf", "adt":".htd", "af":".af", "bf":".bf", "cf":".cf", "bak_htd":".htb", "bak_maf":".mab", "tmp":".tmp", "log":".htl",}`);
+- `ext` (_dict_) - _dictionary_ with file extensions for all HTMS file types (by default `{"maf":".maf", "adt":".htd", "af":".af", "bf":".bf", "cf":".cf", "bak_htd":".htb", "bak_maf":".mab", "tmp":".tmp", "log":".htl",}`);
 - `from_subclass` (_bool_):
   * _True_ \- if an instance of a class is created from a derived class (`HTdb(HT)` class in HTMS mid-level API); 
   * _False_ \- (by default);  
 - `zmq_context` ( _bool_ or _object_ ) - (by default _False_) Python bindings for ZeroMQ (see https://pyzmq.readthedocs.io/en/latest/api/zmq.html,  which means the ZeroMQ context will be created in the Cage object itself). Used to optimize the system, this parameter can be left _False_. 
 ### Attributes 
-The main data structure with HT attributes (`a_free`, `b_free`, `c_free`, `attrs`, `mafs`, `models`) is its descriptor (see above) except dictionary `relations`. During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
+The main data structure with HT attributes (`a_free`, `b_free`, `c_free`, `attrs`, `mafs`, `models`) is its descriptor (see above) except _dictionary_ `relations`. During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
 
 Attributes, which used only in the instances and not saved in files:
 
-  * `HT.channels` \- mapping dictionary for adt, af, bf, cf files and Cage channels. 
-  * `HT.mafs_opened` - a dictionary with MAF instances. Just as an instance of the HT class serves for working with one HT as a whole, MAF instance provides work with one ("opened") MAF. 
+  * `HT.channels` \- mapping _dictionary_ for adt, af, bf, cf files and Cage channels. 
+  * `HT.mafs_opened` - a _dictionary_ with MAF instances. Just as an instance of the HT class serves for working with one HT as a whole, MAF instance provides work with one ("opened") MAF. 
   * `HT._instances` \- the set of weak references to class objects 
 ### &nbsp;
 ### Methods
 #### &nbsp;
-### `getinstances` 
+### **`getinstances`** 
 #### `()`
 Class instances generator.
 #### Y i e l d s
 - HT instance object
 #### &nbsp;
-### `close` 
+### **`close`** 
 #### `(Kerr=[])`
 Close HT - closes all database files, destroys objects class `Cage` and destroys the "weak" link to the `HT` object. Upon destruction a weak link also destroys the instance itself.
 #### R e t u r n s
@@ -175,7 +175,7 @@ Close HT - closes all database files, destroys objects class `Cage` and destroys
   * `False` \- error. 
 In HTMS there is a special common for all levels subsystem for error processing (see section _HTMS error processing_ below). `Kerr` - is list object for error description, which can have not empty value before method activation, and contains added information about new error, if method returns `False`.
 #### &nbsp;
-### `attribute` 
+### **`attribute`** 
 #### `(Kerr=[], fun= "add", attr_name="", type=None, newname= "", attr_num_p=0)`
 Define or change the set of the common attributes of the database - their symbolic names and data types. When initially create a new HT attribute it is allocated a unique numeric id, which does not change during the timelife of the HT. 
 Existing HTMS Implementation does not support the removal of the HT attribute at the physical level. 
@@ -194,16 +194,16 @@ Existing HTMS Implementation does not support the removal of the HT attribute at
   * `integer` - internal attribute id number if `fun=info` and `attr_name`!=`""`; 
   * `str` - attribute name if `fun=info` and `attr_num_p`!=`0`; 
 #### &nbsp;
-### `update_attrs` 
+### **`update_attrs`** 
 #### `(add_attrs = {})`
 Serves only to add new attributes into the database. 
 #### R e c e i v e s
-- `add_attrs`  - dictionary, mapping the names of the attribute being added with its data type 
+- `add_attrs`  - _dictionary_, mapping the names of the attribute being added with its data type 
 #### R e t u r n s
-  * `0` \- if `add_attrs` parameter is an empty dictionary; 
-  * `integer` \- the number of added attributes (may be less than `len(add_attrs)`, if in dictionary keys there is the names, already used for HT attributes.
+  * `0` \- if `add_attrs` parameter is an empty _dictionary_; 
+  * `integer` \- the number of added attributes (may be less than `len(add_attrs)`, if in _dictionary_ _keys_ there is the names, already used for HT attributes.
 #### &nbsp;
-### `get_maf_num` 
+### **`get_maf_num`** 
 #### `(maf_name = "")`
 Returns the MAF number by its conditional name. 
 #### R e c e i v e s
@@ -212,7 +212,7 @@ Returns the MAF number by its conditional name.
   * `0` \- if in all HT MAF names there is no `maf_name`  
   * `integer` \- the HT unique MAF number.
 #### &nbsp;
-### `get_attr_num_and_type` 
+### **`get_attr_num_and_type`** 
 #### `(attr_name = "")`
 Returns the HT unique attribute number and its data type by its conditional name. 
 #### R e c e i v e s
@@ -221,39 +221,39 @@ Returns the HT unique attribute number and its data type by its conditional name
   * `()` \- if in all HT attribute names there is no `attr_name`  
   * (`integer`, `str`) \- the tuple with HT attribute internal number and HTMS data type.
 ### &nbsp;
-### "External" functions (not classes methods) in package `htms-low-api` that apply only to closed HTs
+### **"External" functions** (not classes methods) in package `htms-low-api` that apply only to closed HTs
 #### &nbsp;
 All functions needs use temporary Cage object, because HT must be closed (i.e there is no HT instance in RAM)
 #### &nbsp;
-### `rename_ht` 
+### **`rename_ht`** 
 #### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", jwt_temp_cage="",cage_name= "", zmq_context =False)`
 Rename HT (rename database files and internal descriptors). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
-### `delete_ht` 
+### **`delete_ht`** 
 #### `(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", cage_name= "", zmq_context =False)`
 Remove HT (delete all database files). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
-### `deepcopy_ht` 
+### **`deepcopy_ht`** 
 #### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", new_ht_root ='', jwt_cage="",cage_name= "",zmq_context =False)`
 Copy HT (database files) with full creating all attributes, tables and descriptors, that ensures the creation of a new internal numbering of attributes and tables in the copy of old HT and the absence of fragmentation in shared common files (`af`, `bf` and `cf`). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
-### `compress_ht` 
+### **`compress_ht`** 
 #### `(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage="",cage_name="", zmq_context =False)`
 Makes deepcopy HT (database files) to the new HT, then delete old HT files, and restores all the names of the old table to the new one. 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
-## Class `MAF`
+## Class **`MAF`**
 ### `(ht, maf_num=0, maf_name="", from_subclass=False)`
 #### &nbsp;
 This is the second main class at the physical layer of HTMS. MAF is a table of the HT. When creating each object (instance) of class MAF using the method `weakref.ref` a weak link is created to it to have the ability to search for all open MAFs in the RAM.
@@ -271,8 +271,8 @@ When creating or changing the structure of an MAF (a set of fields from a variet
 #### &nbsp;
 ### Attributes 
 - `ht` \- reference to the object of the HT class database, which includes the MAF 
-- `rows`\- the number of rows in the table - essentially a duplicate meanings in the HT mafs dictionary. **In HTMS tables (MAFs) first row has number 1 (not 0)**. 
-- `fields` \- a dictionary of table fields in which keys are the attribute names of the HT, and the values are tuples (`attribute number`, `attribute type`) 
+- `rows`\- the number of rows in the table - essentially a duplicate meanings in the HT mafs _dictionary_. **In HTMS tables (MAFs) first row has number 1 (not 0)**. 
+- `fields` \- a _dictionary_ of table fields in which _keys_ are the attribute names of the HT, and the _values_ are tuples (`attribute number`, `attribute type`) 
 - `offsets` \- a tuple with pairs (`offset`, `field length`), each pair of which strictly corresponds to the table field. The `offset` is the position of the first byte of the field relative to the beginning of the row record, `field length` - the number of bytes in the field. 
 - `ch` \- MAF channel number (for the remote access system - `Cage`). 
 - `rowlen` \- the length of one MAF row record in bytes. This information is redundant, taking into account the one contained in the HT descriptor, however, it speeds up HTMS and makes it easier to use API for programmers. 
@@ -280,41 +280,41 @@ When creating or changing the structure of an MAF (a set of fields from a variet
 ### &nbsp;
 ### Methods
 #### &nbsp;
-### `getinstances` 
+### **`getinstances`** 
 #### `()`
 Class instances generator.
 #### Y i e l d s
 - MAF instance object
 #### &nbsp;
-### `rename` 
+### **`rename`** 
 #### `(Kerr=[], new_maf_name='')`
 Rename MAF
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `delete` 
+### **`delete`** 
 #### `(Kerr=[])`
 Delete MAF
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `close` 
+### **`close`** 
 #### `(Kerr=[])`
 Close MAF - closes the file in the database, destroys the "weak" link to the object. When destroying a weak links also destroy the instance itself. 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `wipe` 
+### **`wipe`** 
 #### `(Kerr=[])` 
-Zero" the MAF - it closes, then HTMS deletes it, but without making changes to the dictionary HT models, then a new "empty" MAF is created with the same number and name. 
+Zero" the MAF - it closes, then HTMS deletes it, but without making changes to the _dictionary_ HT models, then a new "empty" MAF is created with the same number and name. 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `field` 
+### **`field`** 
 #### `(Kerr=[], fun='add',  attr_name='', attr_num_f=0)`
 Define or change the fields of the MAF by name (`attr_name`) or number (`attr_num_f`). 
 #### R e c e i v e s
@@ -325,7 +325,7 @@ Define or change the fields of the MAF by name (`attr_name`) or number (`attr_nu
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `row` 
+### **`row`** 
 #### `(Kerr=[], fun='add', after=-1, number=1, data=b'')`
 Operations with rows of the MAF.
 #### R e c e i v e s
@@ -341,7 +341,7 @@ Operations with rows of the MAF.
   * `False` \- error;
   * `_binary_` - rows as binary string (for `read` function if success). 
 #### &nbsp;
-### `w_links` 
+### **`w_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0, links=set(), rollback=False)`
 Record (write, update) the value in the reference type attribute (RTA field). Links argument is a set of the pairs - tuples (`MAF number`, `row number`) 
 #### R e c e i v e s
@@ -355,7 +355,7 @@ Record (write, update) the value in the reference type attribute (RTA field). Li
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_links` 
+### **`r_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the value of the reference type attribute (RTA field). 
 #### R e c e i v e s
@@ -365,7 +365,7 @@ Read the value of the reference type attribute (RTA field).
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `u_links` 
+### **`u_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0, u_link =(), rollback=False)`
 Change the value of the reference type attribute (RTA field). 
 #### R e c e i v e s
@@ -380,7 +380,7 @@ Change the value of the reference type attribute (RTA field).
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `w_elem` 
+### **`w_elem`** 
 #### `(Kerr=[], attr_num=0, num_row=0, elem =b'')`
 Write the field value in the form of a binary array without structuring (no serialization). Can be used to write byte strings of the fixed length (data types: `byte1`, `byte4`, `byte8`), either at a very low physical level.
 #### R e c e i v e s 
@@ -389,14 +389,14 @@ Write the field value in the form of a binary array without structuring (no seri
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_elem` 
+### **`r_elem`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the field value in the form of a binary array without structuring (no serialization). 
 #### R e t u r n s
   * `elem` \- binary string if success;
   * `False` \- error.
 #### &nbsp;
-### `w_utf8` 
+### **`w_utf8`** 
 #### `(Kerr=[], attr_num=0, num_row=0, string='')`
 Update the value of a field of type string UTF-8 (for `utf50`, `utf100` `and datetime` data types).
 #### R e c e i v e s 
@@ -405,14 +405,14 @@ Update the value of a field of type string UTF-8 (for `utf50`, `utf100` `and dat
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_utf8` 
+### **`r_utf8`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the value of a field of type string UTF-8.
 #### R e t u r n s
   * `string` \- UTF-8 string if success;
   * `False` \- error.
 #### &nbsp;
-### `w_numbers` 
+### **`w_numbers`** 
 #### `(Kerr=[], attr_num=0, num_row=0, numbers='')`
 Update the value of a field of a numeric type (`int4`, `int8`, `float4`, `float8`, `time`, `*int4`, `*int8`, `*float4` and `*float8`). 
 #### R e c e i v e s 
@@ -421,14 +421,14 @@ Update the value of a field of a numeric type (`int4`, `int8`, `float4`, `float8
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_numbers` 
+### **`r_numbers`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the field's value of numeric typ. 
 #### R e t u r n s
   * `numbers` \- is always a list of numbers of the appropriate type;
   * `False` \- error.
 #### &nbsp;
-### `w_bytes` 
+### **`w_bytes`** 
 #### `(Kerr=[], attr_num=0, num_row=0, bytes='')`
 Update the value of a field with type an array of bytes of variable length (`*byte`)  
 #### R e c e i v e s 
@@ -437,14 +437,14 @@ Update the value of a field with type an array of bytes of variable length (`*by
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_bytes` 
+### **`r_bytes`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the field's value of numeric type. 
 #### R e t u r n s
   * `bytes` \- array of bytes;
   * `False` \- error.
 #### &nbsp;
-### `w_str` 
+### **`w_str`** 
 #### `(Kerr=[], attr_num=0, num_row=0, string='', rollback=False)`
 Update the value of a field of type UTF-8 string of variable length (`*utf`)   
 #### R e c e i v e s 
@@ -456,14 +456,14 @@ Update the value of a field of type UTF-8 string of variable length (`*utf`)
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_str` 
+### **`r_str`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Read the value of a field of type UTF-8 string of variable length (`*utf`). 
 #### R e t u r n s
   * `string` \- UTF-8 string;
   * `False` \- error.  
 #### &nbsp;
-### `upload_file` 
+### **`upload_file`** 
 #### `(Kerr=[], attr_num=0, num_row=0, from_path='', real_file_name='', file_e='', content_t='',  file_d={}, rollback=False)`
 Upload the file to the database. Loading is done in blocks (chunks), which size is optimized depending on the size pages of buffer memory for objects of class `Cage`. Update the value of a file descriptor which stores in `af` file. 
 #### R e c e i v e s 
@@ -473,7 +473,7 @@ Upload the file to the database. Loading is done in blocks (chunks), which size 
 - `file_e` \- file extention on HT;
 - `content_t` \- file content type (MIME);
 #### Additional parameters
-- `file_d` \- dictionary with old file descriptor `{'file_name':..., 'file_ext':..., 'content_type':..., 'file_length':...}`;
+- `file_d` \- _dictionary_ with old file descriptor `{'file_name':..., 'file_ext':..., 'content_type':..., 'file_length':...}`;
 - `rollback` \: 
   * `False` \- (by default) allows writing a new file to the place of the previous one in the file `bf` (if it was and if the length of the new string is no longer than the length of the old one); 
   * `True` \- prohibits writing a new file to the place of the previous one in the file `bf`.
@@ -481,7 +481,7 @@ Upload the file to the database. Loading is done in blocks (chunks), which size 
   * `True` \- success; 
   * `False` \- error.  
 #### &nbsp;
-### `download_file` 
+### **`download_file`** 
 #### `(Kerr=[], attr_num=0, num_row=0,  to_path='')`
 Upload the file to the database. Loading is done in blocks (chunks), which size is optimized depending on the size pages of buffer memory for objects of class `Cage`. Update the value of a file descriptor. 
 #### R e c e i v e s 
@@ -491,21 +491,21 @@ Upload the file to the database. Loading is done in blocks (chunks), which size 
   * `True` \- success; 
   * `False` \- error.
 #### &nbsp;
-### `r_file_descr` 
+### **`r_file_descr`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Reset (clean) file descriptor. This means the logical deletion of the file. Physically, the space in the `bf` file remains occupied. 
 #### R e t u r n s
-  * `dict` \- dictionary with file descriptor `{'file_name':..., 'file_ext':..., 'content_type':..., 'file_length':...}`; 
+  * `dict` \- _dictionary_ with file descriptor `{'file_name':..., 'file_ext':..., 'content_type':..., 'file_length':...}`; 
   * `False` \- error.   
 #### &nbsp;
-### `clean_file_descr` 
+### **`clean_file_descr`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
 Reset (clean) file descriptor. This means the logical deletion of the file. Physically, the space in the `bf` file remains occupied. 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error. 
 #### &nbsp;
-### `attr_type` 
+### **`attr_type`** 
 #### `(n_attr=0)`
 Return the data type by HT attribute id number 
 #### R e c e i v e s 
@@ -513,9 +513,9 @@ Return the data type by HT attribute id number
 #### R e t u r n s
   * `str` \- HT data type; 
 ### &nbsp;
-### "External" function
+### **"External" function**
 #### &nbsp;
-### `get_maf` 
+### **`get_maf`** 
 #### `(ht_name, n_maf)`
 Get info about MAF. HT must be opened. 
 #### R e c e i v e s 
