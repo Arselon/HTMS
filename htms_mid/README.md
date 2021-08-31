@@ -1,4 +1,4 @@
-﻿
+
 # The middle level of the HTMS
 ### &nbsp;
 ##  Includes classes: **HTdb** - inhered class from HT class (from low level), **Table** - inhered class from MAF class (from low level), **Links_array** - "service" class for set of the links in RAM, **Links_tree** - class for creating and managing objects describing graphs of the search waves.
@@ -364,21 +364,6 @@ Construction (forming) of direct waves and/or reverse waves on the links of `nro
   * `None` - if all trees are empty. 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### &nbsp;
 
 ____________________
@@ -386,6 +371,6 @@ ____________________
 
 #####  Software Licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-###### Cageserver v.4.1, Cage package v.2.10.0, readme.md red.30.08.2021
+#####  htms_mid API v.2.3.1, readme.md red. 31.08.2021
 
 
