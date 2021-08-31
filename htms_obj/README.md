@@ -13,7 +13,7 @@
 -    `htorm.py` - contains classes `HT_Obj` and `Obj_RAM`;
 -    `htms_par_obj.py` - contains class `HTMS_User_Err` for error processing, derived class from `Exception` system class. 
 #### &nbsp;
-## Class `HT_Obj`
+## Class **`HT_Obj(HTdb)`**
 ### `(server='', db_root='', db_name='', jwtoken="", mode='wm', cage_name='', new=False, zmq_context=False)`
 #### &nbsp;
 The `HT_Obj` derives from `HTdb` class (HTMS middle level) and inherits all of its attributes and methods. As well as `HTdb` it is used to create a specific object to model a specific database and is necessary when creating and using instances of the class `Obj_RAM`.
@@ -38,7 +38,7 @@ It is used in the file servers to identify client applications. It is passed to 
 ### Attributes
 `HT_Obj`attributes inherited from the class `HTdb` (mid-level HTMS). 
 ### &nbsp;
-## Class `Obj_RAM` 
+## Class **`Obj_RAM(TABLE)`** 
 ### `(table='', only_fields=set())`
 #### &nbsp;
 The Obj_RAM derives from `Table` class (HTMS middle level) and inherits all of its attributes and methods. It is used for operations on a specific table in a specific database. With Obj_RAM class the objects are "virtually" mapped (transformed) from the program code to rows of the table, and vice versa. Each object, an instance of this class, either corresponds to a row of a certain table with a subset of its fields (in the simplest case with the entire set of the fields), or serves to add a new row to the table.
@@ -57,7 +57,7 @@ Each `Obj_RAM` has the following attributes:
   * `HT_Obj_name` \- symbolic HT name
 ### &nbsp;
 ### Main methods
-### `get_from_table` 
+### **`get_from_table`** 
 #### `(rows=(), with_fields={},  modality='all', res_num=Types_htms.max_int4, update=False)` 
 This is a method for mapping row(s) of a table into objects in RAM, which creates “empty” instances, physically reads data from the table in the database, and fills the fields of instances with these data. The only data type that is not physically read in the RAM is files. Instead of being in the body of the file itself, the file descriptor is written to the object.
 #### R e c e i v e s
@@ -73,7 +73,7 @@ This is a method for mapping row(s) of a table into objects in RAM, which create
 #### R e t u r n s
 - the list of "row" objects that match the input parameters. Each object corresponds to one row of the table. If nothing is found, it returns `[]`. 
 #### &nbsp;  
-### `get_from_RAM` 
+### **`get_from_RAM`** 
 #### `(id=0)` 
 A method for selecting one (by `id` row number) or all (if `id=0`) objects of the row type from RAM.
 #### R e c e i v e s
@@ -81,13 +81,13 @@ A method for selecting one (by `id` row number) or all (if `id=0`) objects of th
 #### R e t u r n s
 - the list with one or set of "row" objects. If nothing is found, it returns `[]`. Objects has attributes as in `get_from_table` method.  
 #### &nbsp;
-### `get_clone` 
+### **`get_clone`** 
 #### `()` 
 The method creates a row object in RAM with empty attribute values and with `id=None`.
 #### R e t u r n s
 - the one "row" object.  
 #### &nbsp;
-### `get_attr_num_and_type` 
+### **`get_attr_num_and_type`** 
 #### `(attr_name="")` 
 #### R e c e i v e s
 - `attr_name` \- symbolic attribute name.
@@ -96,33 +96,33 @@ Tuple with two items:
 - unique attribute number;
 - attribute data type ("byte1", "byte4", "byte8", "utf50", "utf100", "int4", or other - see full description of HTMS data types in low level HTMS docs).
 #### &nbsp;
-### `get_table_object` 
+### **`get_table_object`** 
 #### `()` 
 The method is used to get an object of the `Table` class, from which it was inherited the instance of the class `Obj_RAM` (see description of the `Table` class in middle level HTMS docs.
 #### R e t u r n s
 `Table` instance in RAM.
 #### &nbsp;
-### `get_HT_Obj` 
+### **`get_HT_Obj`** 
 #### `()` 
 The method is used to get an object of the `HT_Obj` class, which corresponds to the HT, to which the table belongs from which `Obj_RAM` instance was inherited.
 #### R e t u r n s
 `HT_Obj` instance.
 #### &nbsp;
-### `link` 
+### **`link`** 
 #### `(link_field='', to_table_objects=())` 
 Method is used to add (update) links between objects in RAM. It updates the field value in the object for the specified `link_field` and adds links to the specified objects (rows) of the tables. 
 #### R e c e i v e s
 - `link_field` \- the symbolic attribute name; 
 - `to_table_objects` \- the list with `Obj_RAM` objects;
 #### &nbsp;
-### `unlink` 
+### **`unlink`** 
 #### `(link_field ='', to_table_objects= ())` 
 Method by the specified attribute name (table field with links) deletes links to the specified `Obj_RAM` objects in RAM.
 #### R e c e i v e s
 - `link_field` \- the symbolic attribute name; 
 - `to_table_objects` \- the list with `Obj_RAM` objects;
 #### &nbsp;
-### `ref`
+### **`ref`**
 #### `(link_field='', only_fields=set(), with_fields={}, ref_class=None, res_num=Types_htms.max_int4)`  
 Using the specified attribute name (link field) get a list of objects referenced by this object. This is used for navigation in the HT.
 #### R e c e i v e s
@@ -132,7 +132,7 @@ Using the specified attribute name (link field) get a list of objects referenced
 - `ref_class` \- restricts the classes of tables from which the list of referenced objects will be formed to one explicitly specified; 
 - `res_num` \- if explicitly setted as a integer number, the method will return as a result a list of objects no longer than the value of this parameter, by default it is equal to the maximum possible number of rows in HTMS tables.
 #### &nbsp;
-### `source`
+### **`source`**
 #### `(source_class=None, only_fields=set(), with_fields={}, res_num=Types_htms.max_int4)`  
 Get a list of objects that refer to this.
 #### R e c e i v e s
@@ -141,11 +141,11 @@ Get a list of objects that refer to this.
 - `with_fields` \- as for `get_from_table` method;
 - `res_num` \- as for `link` method.
 #### &nbsp;
-### `delete`
+### **`delete`**
 #### `()`  
 Delete the row in the table that corresponds with the "row" object. The object in RAM is **not deleted**.
 #### &nbsp;
-### `save`
+### **`save`**
 #### `()`  
 Save the object in a table row (update its fields) if the object has correct identifier field `Obj_RAM.id`. If `Obj_RAM.id==0 or None`, then a new row is added to the table (at the end) and the value `Obj_RAM.id` an equal number of table rows plus one is set.
 ### &nbsp;
@@ -155,6 +155,6 @@ ____________________
 
 #####  Software Licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-###### Cageserver v.4.1, Cage package v.2.10.0, readme.md red.30.08.2021
+#####  htms_obj API v.2.3.0, readme.md red. 30.08.2021
 
 
