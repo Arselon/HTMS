@@ -173,7 +173,8 @@ Close HT - closes all database files, destroys objects class `Cage` and destroys
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error. 
-In HTMS there is a special common for all levels subsystem for error processing (see section _HTMS error processing_ below). `Kerr` - is list object for error description, which can have not empty value before method activation, and contains added information about new error, if method returns `False`.
+
+**Attention!** In HTMS low level used the special software, imported from `cage-api` (from module `cage_err.py`) for error processing (see [Cage system](https://github.com/Arselon/Cage)). `Kerr` - is list object for error description, which can have not empty value before method activation, and contains added information about new error, if method returns `False`.
 #### &nbsp;
 ### **`attribute`** 
 #### `(Kerr=[], fun= "add", attr_name="", type=None, newname= "", attr_num_p=0)`
