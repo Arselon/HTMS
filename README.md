@@ -20,7 +20,7 @@ Simplicity was one of the main goals of creating HTMS. Using the HTMS is no more
 ####
 Full description of the tabular network data model see on `medium.com` website: **[Tabular network data model series](
 https://medium.com/@azur06400/tabular-network-data-model-series-f7b8469ed333)** 
-### &nbsp;
+#### &nbsp;
 The HTMS includes the following levels and packages:
 - The "**object-level**" of the HTMS includes `HT_Obj` class for creating the HT objects, and `Obj_RAM` class for mapping (transforming) objects to/from the rows of tables. The main functional class at this level is `Obj_RAM`, the methods of which provide the basic operations for manipulating, searching and filtering data, which are similar in results to the `objects` methods in the ORM;
 - The "**mid-level**" of the HTMS API is a set of classes and functions that form the basis for object-level: for organizing HT structures in general as well as models of individual tables (an analog of the `models` in Django ORM) and support common operations with the attributes, tables, rows and fields (create, change, delete etc.) and for formation search waves;
