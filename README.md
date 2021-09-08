@@ -18,13 +18,8 @@ The first functionally complete implementation of the TNDB application programmi
 ####
 Simplicity was one of the main goals of creating HTMS. Using the HTMS is no more complicated than the APIs of well-known ORMs such as Django ORM. But the tabular network model is much closer to the real world than the relational model, so to design the databases easier.
 ####
-Full description of the tabular network data model see on `medium.com` website:
-- **[The tabular network model for database management](
-https://medium.com/@azur06400/the-tabular-network-model-for-database-management-af086edad4c)** 
-- **[Tabular network data model. Part 1. Conceptual definition](https://medium.com/@azur06400/tabular-network-data-model-part-1-conceptual-definition-49e84104b8aa)** 
-- **[Tabular network data model. Part 2. Important features](https://medium.com/@azur06400/tabular-network-data-model-part-2-important-features-99a07f514b4)** 
-- **[Hypertable Management System (HTMS) for tabular network databases](
-https://medium.com/@azur06400/hypertable-management-system-htms-for-tabular-network-databases-1e9ef617f0ad)**
+Full description of the tabular network data model see on `medium.com` website: **[Tabular network data model series](
+https://medium.com/@azur06400/tabular-network-data-model-series-f7b8469ed333)** 
 ### &nbsp;
 The HTMS includes the following levels and packages:
 - The "**object-level**" of the HTMS includes `HT_Obj` class for creating the HT objects, and `Obj_RAM` class for mapping (transforming) objects to/from the rows of tables. The main functional class at this level is `Obj_RAM`, the methods of which provide the basic operations for manipulating, searching and filtering data, which are similar in results to the `objects` methods in the ORM;
