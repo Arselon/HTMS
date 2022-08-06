@@ -1,18 +1,17 @@
-# HTMS low level  v. 2.3(Cage class v. 2.9)
-# © A.S.Aliev, 2018-2021
-
+# HTMS low level  v. 3.1.0 (Cage class v. 3.1.0)
+# © A.S.Aliev, 2018-2022
 
 from cage_api             import  *
 
-from .htms_par_low           import   *
-from .data_types            import   *
+from .htms_par_low        import   *
+from .data_types          import   *
 
 
 #----------------------------------------------------------------------------------------------------
 
 def match ( sample,  is_num_array, is_string_array, is_bytes_array, attr_type, tested):
 
-                f=          sample
+                f=      sample
                 elem=   tested
         # f - it is sample,  elem - data for compare,  attr_type - data type of elem 
         #       f  = ( oper, value1, value2|none)
@@ -168,23 +167,23 @@ def match ( sample,  is_num_array, is_string_array, is_bytes_array, attr_type, t
 
 #----------------------------------------------------------------------------------------------------------------
 
-def links_dump (  maf, level="" ):
+def links_dump (  maf, level="", links=True, weights=True ):
 
     if level not in ("", "up", "down"):
         return
 
-    links =[]
     maf.ht.cage.push_all ()
-    print ('\n --- htms link dump ---  table: "%20s"  (maf num:  %4d )' % (  maf.maf_name, maf.maf_num,  )  )
+    print ('\n --- htms link dump ---  table: "%20s"  (maf num:  %4d )' % 
+           (  maf.maf_name, maf.maf_num,  )  )
     for row in range (1, maf.rows+1):
         kerr=[]
 
         if level == "" or  level=="down":
-            print ('    row  %4d  ' % row  )
+            print ('\n    row  %4d  ' % row  )
             l=[ ]
             for attr in maf.ht.attrs:
                 t= maf.attr_type( attr )
-                if  t == '*link'  and attr != 1:
+                if  links and t == '*link'  and attr not in (1,3):
                     kerr =[]
                     ls = maf.r_links( kerr, attr_num = attr, num_row= row)
                     if is_err( kerr ) >= 0 :      
@@ -192,7 +191,18 @@ def links_dump (  maf, level="" ):
                                (maf.ht.attrs[attr]['name'],str(row),str (kerr) ) )
                         #raise HTMS_Low_Err('91 HTMS_Low_Err    Error read link field.  err = %s' % str (kerr)  )
                     if ls != ():
-                            print ('         %20s  -   links : %s' %  ( maf.ht.attrs[ attr ][ 'name' ] , str ( ls ) ) )
+                            print ('   %20s  -   links : %s' %  
+                                   ( maf.ht.attrs[ attr ][ 'name' ] , str ( ls ) ) )
+                elif  weights and t == '*weight' :
+                    kerr =[]
+                    ls = maf.r_weights( kerr, attr_num = attr, num_row= row)
+                    if is_err( kerr ) >= 0 :      
+                        print ('92 HTMS_Low_Err    Error read weight field. attr=%s, row=%s, err = %s' % 
+                               (maf.ht.attrs[attr]['name'],str(row),str (kerr) ) )
+                        #raise HTMS_Low_Err('91 HTMS_Low_Err    Error read weight field.  err = %s' % str (kerr)  )
+                    if ls != ():
+                            print ('   %20s  -   weights : %s' %  ( maf.ht.attrs[ attr ][ 'name' ] , str ( ls ) ) )
+
         if level == "" or  level=="up":
             back_link = maf.r_links( kerr, attr_num = 1, num_row= row)
             if is_err( kerr ) >= 0 :      
@@ -202,6 +212,14 @@ def links_dump (  maf, level="" ):
                 print ('    row  %4d  -  back links : %s' %  ( row, str ( back_link ) ) )
             else:
                 print ('    row  %4d  -  no back links' % row  )
+            back_weight = maf.r_links( kerr, attr_num = 3, num_row= row)
+            if is_err( kerr ) >= 0 :      
+                print ('91 HTMS_Low_Err    Error read Back_weight field. row=%s, err = %s' % (str(row),str (kerr) ) )
+                #raise HTMS_Low_Err('90 HTMS_Low_Err    Error read link field.  err = %s' % str (kerr)  )
+            if back_weight != ():
+                print ('    row  %4d  -  back weights : %s' %  ( row, str ( back_weight ) ) )
+            else:
+                print ('    row  %4d  -  no back weights' % row  )
     print('')
     return
 

@@ -1,5 +1,110 @@
-# HTMS low level  v. 2.3 (Cage class v. 2.9)
-# © A.S.Aliev, 2018-2021
+# HTMS low level  v. 3.1.0 (Cage class v. 3.1.0)
+# © A.S.Aliev, 2018-2022
+
+# HT class
+#
+#    HT (
+#        ht_name="",
+#        server_ip="",                  # ip address:port
+#        cage_name="",
+#        ht_root="",
+#        ext={
+#            "maf": ".maf",
+#            "adt": ".htd",
+#            "af": ".af",
+#            "bf": ".bf",
+#            "cf": ".cf",
+#            "bak_htd": ".htb",
+#            "bak_maf": ".mab",
+#            "tmp": ".tmp",
+#            "log": ".htl",
+#        },
+#        new=False,
+#        jwtoken="",
+#        zmq_context=False,
+#        from_subclass=False,
+#        mode='wm',
+#        local_root='',
+#    ) 
+#        mode in ('rs','ws','wm','rm','sp')   -  corresponds to the parameter mod in Cage class
+#                 rm  - open read/close with monopoly for channel owner
+#                 wm  - open read/write/close with monopoly for channel owner
+#                 rs  - open read/close and only read for other clients
+#                 ws  - open read/write/close and only read for other clients
+#                 sp  - need special external conditions for open and access
+#           
+#    @classmethods
+#
+#       getinstances()
+#       removeinstances(obj)
+#
+#    methods (commonly used)
+#
+#       attribute(
+#           Kerr=[], fun="add", attr_name="", type=None, newname="", attr_num_p=0
+#           )
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#           or
+#           integer - internal attribute id number if fun=info and attr_name!="";
+#           or
+#           str - attribute name if fun=info and attr_num_p!=0;
+#       add_ht_attrs(add_attrs={})            
+#           return (num_attrs, names_attrs) 
+#           or
+#           if add_attrs=={} - return (0, set())
+#           if error - raise HTMS_Low_Err : 20-21
+#       get_maf_num(maf_name="")              
+#           if error - return 0
+#       get_attr_num_and_type(attr_name="")   
+#           if error - return ()
+#       close(Kerr=[])                        
+#           return True 
+#           or 
+#           if error - raise HTMS_Low_Err : 17-19
+#
+#
+# functions (not class methods, applicable only to opened HT)
+#
+#       get_maf( ht_name, n_maf ):
+#           returns (maf_name, rows)
+#           or
+#           if error - ("",0)
+
+# functions (not class methods, applicable only to closed HT)
+#
+#       rename_ht(
+#           Kerr=[], server_ip="", ht_name="", ht_root="", 
+#           new_ht_name="", 
+#           jwt_temp_cage="",cage_name= "", zmq_context =False)
+#           )
+#           return True 
+#           or 
+#           if error - raise HTMS_Low_Err : 30-44
+#       delete_ht(
+#           Kerr=[], server_ip="", ht_name="", ht_root="", 
+#           jwt_temp_cage="", cage_name= "", zmq_context =False
+#           )
+#           return True 
+#           or 
+#           if error - raise HTMS_Low_Err : 45-50
+#       deepcopy_ht(
+#           Kerr=[], server_ip="", ht_name="", ht_root="", 
+#           new_ht_name="", new_ht_root ='', 
+#           jwt_cage="", cage_name= "", zmq_context =False
+#           )
+#           return True 
+#           or 
+#           if error - raise HTMS_Low_Err : 59-74
+#       compress_ht(
+#           Kerr=[], server = '', ht_name='', ht_root = '', 
+#           jwt_temp_cage="",cage_name="", zmq_context =False
+#           )
+#           return True 
+#           or 
+#           if error - raise HTMS_Low_Err : 80-81
+#
 
 import os
 import posixpath
@@ -18,11 +123,11 @@ from cage_api             import  *
 from .htms_par_low        import  *
 from .data_types          import  *
 from .maf                 import  *
+from .funcs               import  *
 
 Mod_name = "*" + __name__
 
-from tqdm import tqdm
-tqdm.monitor_interval = 0
+#from tqdm import tqdm
 
 class HT(object):
 
@@ -52,36 +157,52 @@ class HT(object):
         jwtoken="",
         zmq_context=False,
         from_subclass=False,
-        mode='wm'
+        mode='wm',
+        local_root=CAGE_LOCAL_ROOT,
     ):
+        self.closed=True
 
-        #tqdm.monitor_interval = 0
         if ht_name == "":
             self.ht_name = "htms_test"
         else:
             self.ht_name = ht_name
 
-        if server_ip == "":
-            if (
-                "SERVER_IP_DNS" not in globals() or SERVER_IP_DNS == ""
-            ):  # SERVER_IP_DNS - setting  from htms_par_low.py
-                self.server_ip = "127.0.0.1:"
+        if local_root=="":
+            if server_ip == "" or server_ip == ":":
+                if (
+                    "SERVER_IP_DNS" not in globals() or SERVER_IP_DNS == ""
+                ):                      # SERVER_IP_DNS - setting  from htms_par_low.py
+                    self.server_ip = "127.0.0.1:"
+                else:
+                    self.server_ip = SERVER_IP_DNS + ":"
+                if (
+                    "MAIN_SERVER_PORT" not in globals()
+                ):                      # MAIN_SERVER_PORT - setting  from htms_par_low.py
+                    self.server_ip += str(3570)
+                else:
+                    self.server_ip += str(MAIN_SERVER_PORT)
             else:
-                self.server_ip = SERVER_IP_DNS + ":"
-            if (
-                "MAIN_SERVER_PORT" not in globals()
-            ):  # MAIN_SERVER_PORT - setting  from htms_par_low.py
-                self.server_ip += str(3570)
-            else:
-                self.server_ip += str(MAIN_SERVER_PORT)
+                self.server_ip = server_ip
         else:
-            self.server_ip = server_ip
+            self.server_ip ={}
+           
+        self.local_root=local_root
+        self.mode= mode
+        self.ht_root = ht_root
+        self.ext = ext
+
+        self.channels = {}
 
         for h_t in HT.getinstances():
+
+            if h_t.closed:
+                continue
             if  hasattr(h_t, 'ht_root') and\
                 h_t.server_ip == self.server_ip and\
                 h_t.ht_name == self.ht_name and\
-                h_t.ht_root == ht_root:
+                h_t.ht_root == self.ht_root :
+                if  not hasattr(h_t, 'local_root') and self.local_root!="":
+                    continue
 
                 if h_t.mode == 'rs':
                     if mode == 'rs':
@@ -89,7 +210,7 @@ class HT(object):
                             % ht_name )
                     else:
                         pr ('02-1 HTMS_Low_Err HT     Data base  "%s" already exist and opened, that is incompatible with exclusive status.'% ht_name)
-                        raise HTMS_Low_Err('02-1 HTMS_Low_Err HT     Data base  "%s" already exist and opened, that is incompatible with exclusive status.'% ht_name )
+                    raise HTMS_Low_Err('02-1 HTMS_Low_Err HT     Data base  "%s" already exist and opened, that is incompatible with exclusive status.'% ht_name )
                         
                 else:
                     pr ('02-2 HTMS_Low_Err HT     Data base  "%s" already exist and opened in incompatible mode "%s". '%
@@ -104,43 +225,19 @@ class HT(object):
         else:
             weak= self._instances
             self.__class__._instances.update(weak)
-           
 
-        self.mode= mode
-        self.ht_root = ht_root
-        self.ext = ext
-
-        self.channels = {}
-
-        if zmq_context== None or zmq_context==False :
-            self.zmq_context = zmq.Context()
+        if local_root=="":
+            if zmq_context== None or zmq_context==False :
+                self.zmq_context = zmq.Context()
+            else:
+                self.zmq_context= zmq_context
         else:
-            self.zmq_context= zmq_context
+            self.zmq_context=False
 
         if cage_name == "":
             self.cage_name = self.ht_name
         else:
             self.cage_name = cage_name
-
-        """
-        if self.ht_root == "":
-            if (
-                "HTDB_ROOT" not in globals() or HTDB_ROOT == ""
-            ):  # HTDB_ROOT - setting  from htms_par_low.py
-                p = self.server_ip.find(":")
-                host = self.server_ip[:p]
-                if host in ("localhost", "127.0.0.1"):
-                    base_dir = os.path.dirname(
-                        os.path.dirname(os.path.abspath(__file__))
-                    )
-                    self.ht_root = posixpath.join(
-                        *(base_dir.split(os.path.sep) + ["htms_db"])
-                    )
-                else:
-                    self.ht_root = "C:/htms"
-            else:
-                self.ht_root = HTDB_ROOT
-        """
 
         self.cage2_name =  "2"+self.cage_name
 
@@ -150,55 +247,59 @@ class HT(object):
                (self.ht_name, MAX_FILE_NAME_LEN)
                 )
 
-        if jwtoken== ""  : 
-            pr('01 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % self.ht_name)
-            raise HTMS_Low_Err(
-                '01 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % self.ht_name
-            )
-        else:
-            self.jwtoken =jwtoken
-            try:
-                self.payload = jwt.decode(self.jwtoken, algorithms=['HS256'], options={"verify_signature": False})
-            except InvalidTokenError as err:
-                pr( '02HTMS_Low_Err HT  Error during initializing HT "%s" . Invalid JW token, error: %s' \
-                    % (self.ht_name, HTMS_Low_Err) 
-                )     
+        if local_root=="":
+            if jwtoken== ""  : 
+                pr('01 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % self.ht_name)
                 raise HTMS_Low_Err(
-                    '02 HTMS_Low_Err HT  Error during initializing HT "%s" . Invalid JW token, error: %s' \
-                    % (self.ht_name, HTMS_Low_Err) 
-                )    
-        if new and \
-            (self.payload [ 'permission'] == 'low' or \
-            self.mode == "rs"):
-                pr(
-                    '030 HTMS_Low_Err HT  JWT or mode incompatible for creating new HT "%s".'
-                    % (self.mode, self.ht_name)
+                    '01 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % self.ht_name
                 )
-                raise HTMS_Low_Err(
-                    '030 HTMS_Low_Err HT  JWT or mode incompatible for creating new HT "%s".'
-                    % (self.mode, self.ht_name)
-                )           
-        elif self.payload [ 'permission'] == 'low' and self.mode != "rs":
-                pr( 'Attempt open HT with mode "%s"  for permission "%s". Mode was downgraded to "rs". '
-                                            % (self.mode, self.payload [ 'permission'])
+            else:
+                self.jwtoken =jwtoken
+                try:
+                    self.payload = jwt.decode(self.jwtoken, algorithms=['HS256'], options={"verify_signature": False})
+                except InvalidTokenError as err:
+                    pr( '02HTMS_Low_Err HT  Error during initializing HT "%s" . Invalid JW token, error: %s' \
+                        % (self.ht_name, HTMS_Low_Err) 
+                    )     
+                    raise HTMS_Low_Err(
+                        '02 HTMS_Low_Err HT  Error during initializing HT "%s" . Invalid JW token, error: %s' \
+                        % (self.ht_name, HTMS_Low_Err) 
                     )
-                self.mode = "rs"
-        elif self.payload [ 'permission'] == 'standard' and self.mode == "rm" :
-                pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "rs". '
-                                            % (self.mode, self.payload [ 'permission'])
-                    )
-                self.mode = "rs"
-        elif self.payload [ 'permission'] == 'standard' and self.mode in ("wm","sp") :
-                pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "ws". '
-                                            % (self.mode, self.payload [ 'permission'])
-                    )
-                self.mode = "ws"
-        elif self.payload [ 'permission'] == 'high' and self.mode == "sp" :
-                pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "wm". '
-                                            % (self.mode, self.payload [ 'permission'])
-                    )
-                self.mode = "wm"
 
+
+            if new and \
+                (self.payload [ 'permission'] == 'low' or \
+                self.mode == "rs"):
+                    pr(
+                        '030 HTMS_Low_Err HT  JWT or mode incompatible for creating new HT "%s".'
+                        % (self.mode, self.ht_name)
+                    )
+                    raise HTMS_Low_Err(
+                        '030 HTMS_Low_Err HT  JWT or mode incompatible for creating new HT "%s".'
+                        % (self.mode, self.ht_name)
+                    )           
+            elif self.payload [ 'permission'] == 'low' and self.mode != "rs":
+                    pr( 'Attempt open HT with mode "%s"  for permission "%s". Mode was downgraded to "rs". '
+                                                % (self.mode, self.payload [ 'permission'])
+                        )
+                    self.mode = "rs"
+            elif self.payload [ 'permission'] == 'standard' and self.mode == "rm" :
+                    pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "rs". '
+                                                % (self.mode, self.payload [ 'permission'])
+                        )
+                    self.mode = "rs"
+            elif self.payload [ 'permission'] == 'standard' and self.mode in ("wm","sp") :
+                    pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "ws". '
+                                                % (self.mode, self.payload [ 'permission'])
+                        )
+                    self.mode = "ws"
+            elif self.payload [ 'permission'] == 'high' and self.mode == "sp" :
+                    pr( 'Attempt open/create HT with mode "%s"  for permission "%s". Mode was downgraded to "wm". '
+                                                % (self.mode, self.payload [ 'permission'])
+                        )
+                    self.mode = "wm"
+        else:
+            self.jwtoken =""
 
         if new:
 
@@ -234,7 +335,6 @@ class HT(object):
                     '04 HTMS_Low_Err HT  Error during saving memory of new HT "%s" in HTD file.'
                     % self.ht_name
                 )
-
         else:
             try:
                 self.cage = Cage(
@@ -246,6 +346,7 @@ class HT(object):
                     awake=False,
                     cache_file=CACHE_FILE,
                     zmq_context=self.zmq_context,
+                    local_root=self.local_root,
                     mode=self.mode
                 )
             except Exception as er:
@@ -254,7 +355,6 @@ class HT(object):
                     '05 HTMS_Low_Err HT  Error "%s" from Cage One during initializing HT "%s" .' % (er,self.ht_name)
                 )
             else:
-               #time.sleep(2.0)
                 try:
                     self.cage2 = Cage(
                         cage_name=self.cage2_name+(b"\x00" * 4).decode('utf-8')+self.jwtoken,
@@ -263,8 +363,9 @@ class HT(object):
                         maxstrlen=MAXSTRLEN1,
                         server_ip={CAGE_SERVER_NAME: self.server_ip},
                         awake=False,
-                        cache_file=CACHE_FILE2,  # CACHE_FILE - setting  from cage_par_cl.py
+                        cache_file=CACHE_FILE2,         # CACHE_FILE - setting  from cage_par_cl.py
                         zmq_context=self.zmq_context,
+                        local_root=self.local_root,
                         mode=self.mode
                     )
                 except Exception as er:
@@ -272,7 +373,6 @@ class HT(object):
                     raise HTMS_Low_Err(
                         '06 HTMS_Low_Err HT  Error "%s" from Cage Two during initializing HT "%s" .' % (er,self.ht_name)
                     )
-       #time.sleep(2.0)
         if not self.activate():
             del self.cage
             del self.cage2
@@ -280,6 +380,7 @@ class HT(object):
             raise HTMS_Low_Err(
                 '07 HTMS_Low_Err HT  Error during initializing HT "%s" .' % self.ht_name
             )
+        self.closed= False
         pr('HT  "%s"  initialized'% self.ht_name)
 
     # -------------------------------------------------------------------------------------------
@@ -346,7 +447,8 @@ class HT(object):
                 server_ip={CAGE_SERVER_NAME: self.server_ip},
                 awake=False,
                 cache_file=CACHE_FILE,  # Cache_file - setting  from cage_par_cl.py
-                mode=self.mode
+                mode=self.mode,
+                local_root=self.local_root,
             )
         except Exception as er:
                 pr('10 HTMS_Low_Err HT  Error "%s" from Cage during creating HT "%s" .' % (er,self.ht_name))
@@ -364,8 +466,9 @@ class HT(object):
                     maxstrlen=MAXSTRLEN1,
                     server_ip={CAGE_SERVER_NAME: self.server_ip},
                     awake=False,
-                    cache_file=CACHE_FILE2,  # Cache_file - setting  from cage_par_cl.py
-                    mode=self.mode
+                    cache_file=CACHE_FILE2,         # CACHE_FILE2 - setting  from cage_par_cl.py
+                    mode=self.mode,
+                    local_root=self.local_root,
                 )
             except Exception as er:
                     pr('11 HTMS_Low_Err HT  Error "%s" from Cage during creating HT "%s" .' % (er,self.ht_name))
@@ -386,7 +489,7 @@ class HT(object):
         )
 
         for f in self.namef:
-           #time.sleep(0.5)
+
             if f == "bf":
                 rc1 = self.cage2.file_create(CAGE_SERVER_NAME, self.namef[f], Kerr)
             else:
@@ -396,8 +499,8 @@ class HT(object):
                 continue
             elif (
                 rc1 == -1 or rc1 == -2
-            ):  # file already exist and closed (-1)/ opened(-2)
-                # delete old file because new HT creating
+            ):          # file already exist and closed (-1)/ opened(-2)
+                        # delete old file because new HT creating
 
                 if len(Kerr) > 0:
                     Kerr.pop()
@@ -407,7 +510,7 @@ class HT(object):
                 pr('***  HT ***  create files - FILE %s  already exist and rc = %d  ( closed (-1)/ opened(-2) )'%(self.namef[f], rc1))
 
                 rc11 = self.cage.file_remove(CAGE_SERVER_NAME, self.namef[f], Kerr)
-               #time.sleep(0.1)
+
                 if rc11 == True:
                     rc12 = self.cage.file_create(CAGE_SERVER_NAME, self.namef[f], Kerr)
                     if rc12 == True:
@@ -482,7 +585,7 @@ class HT(object):
                 self.channels = {}
                 self.channels["adt"] = self.cage.open(
                     CAGE_SERVER_NAME, self.namef["adt"], Kerr )
-               #time.sleep(0.1)
+
         if self.channels["adt"] == False:
                     set_err_int(
                         Kerr,
@@ -492,7 +595,7 @@ class HT(object):
                         message="HT ADT file not opened.",
                     )
                     return False
-        elif self.channels["adt"] < 0 :  # File  %s  already opened by this client in  mode requared
+        elif self.channels["adt"] < 0 :     # File  %s  already opened by this client in  mode requered
                     set_warn_int(
                         Kerr,
                         Mod_name,
@@ -536,7 +639,7 @@ class HT(object):
             *(self.ht_root.split(os.path.sep) + [self.ht_name + self.ext["adt"]])
         )
         self.channels["adt"] = self.cage.open(CAGE_SERVER_NAME, nameadt, Kerr)
-       #time.sleep(0.1)
+
         if self.channels["adt"] == False:
             set_err_int(
                 Kerr,
@@ -617,9 +720,6 @@ class HT(object):
                 message="HT ip adress:port mismutch: __init__ parameter and readed from ADT file.\n Accepted parameter ( server_ip ).",
             )
 
-        # if  self.ht_root  != dict_adt[ 'ht_root' ]:
-        # set_warn_int (Kerr, Mod_name, 'activate '+self.ht_name, 5, \
-        #      message='Full pathes mismutch: __init__ parameter and readed from ADT file.\n WIll be generated from parameter ( ht_root ).')
         self.namef["adt"] = nameadt
         self.namef["af"] = posixpath.join(
             *(self.ht_root.split(os.path.sep) + [self.ht_name + self.ext["af"]])
@@ -633,13 +733,12 @@ class HT(object):
 
         self.channels["af"] = self.cage.open(
             CAGE_SERVER_NAME, self.namef["af"], Kerr )
-       #time.sleep(0.1)
+
         self.channels["cf"] = self.cage.open(
             CAGE_SERVER_NAME, self.namef["cf"], Kerr )
         self.channels["bf"] = self.cage2.open(
             CAGE_SERVER_NAME, self.namef["bf"], Kerr )
-       #time.sleep(0.1)
-       #time.sleep(0.1)
+
         if (
             not self.channels["af"]
             or not self.channels["bf"]
@@ -668,28 +767,23 @@ class HT(object):
                         if self.mafs_opened != {} and maf_num in self.mafs_opened:
                             if not self.mafs_opened[maf_num].close(Kerr):
                                 pr(
-                                    "17 HTMS_Low_Err    MAF not closed - %d ( %s )."
-                                    % (maf_num, self.mafs[maf_num]["name"])
+                                    "17 HTMS_Low_Err    MAF not closed - %d ( %s ).  err=%s"
+                                    % (maf_num, self.mafs[maf_num]["name"], str(Kerr))
                                 )
-                                Kerr = []
                                 raise HTMS_Low_Err(
-                                    "17 HTMS_Low_Err    MAF not closed - %d ( %s )."
-                                    % (maf_num, self.mafs[maf_num]["name"])
+                                    "17 HTMS_Low_Err    MAF not closed - %d ( %s ).  err=%s"
+                                    % (maf_num, self.mafs[maf_num]["name"], str(Kerr))
                                 )
-                           #time.sleep(0.1)
                         self.mafs[maf_num]["opened"] = False
 
             if self.mode not in ('rs', 'rm' ):
                 try:
                     self.save_adt(Kerr)
                 except:
-                    pr("18 HTMS_Low_Err    ADT file not saved.  Kerr= %s" % str (Kerr))
-                    Kerr = []
-                    raise HTMS_Low_Err("18 HTMS_Low_Err   ADT file not saved.  Kerr= %s" % str (Kerr))
+                    pr("18 HTMS_Low_Err    ADT file not saved.  err= %s" % str (Kerr))
+                    raise HTMS_Low_Err("18 HTMS_Low_Err   ADT file not saved. err= %s" % str (Kerr))
 
             if "cage" in self.__dict__:
-
-                # self.cage.stat(Kerr)
                 rc1= True
                 rc2= True
                 rc3= True
@@ -697,27 +791,24 @@ class HT(object):
                 if 'cf' in self.channels: 
                     rc1 = self.cage.close(self.channels["cf"], Kerr)
                     del self.channels["cf"]
-                   #time.sleep(0.1)
+
                 if 'bf' in self.channels: 
                     rc2 = self.cage2.close(self.channels["bf"], Kerr)
                     del self.channels["bf"]
-                   #time.sleep(0.1)
+
                 if 'af' in self.channels: 
                     rc3 = self.cage.close(self.channels["af"], Kerr)
                     del self.channels["af"]
-                   #time.sleep(0.1)
+
                 if 'adt' in self.channels: 
                     rc4 = self.cage.close(self.channels["adt"], Kerr)
                     del self.channels["adt"]
-                   #time.sleep(0.1)
-                if not rc1 or not rc2 or not rc3 or not rc4:
-                    pr("19 HTMS_Low_Err   HT file(-s) not closed.  rc= cf:%s  bf: %s  af:%s  adt: %s "%\
-                        (str(rc1), str(rc2),str(rc3),str(rc4)))
-                    Kerr = []
-                    raise HTMS_Low_Err("19 HTMS_Low_Err   HT file(-s) not closed. rc= cf:%s  bf: %s  af:%s  adt: %s "% \
-                        (str(rc1), str(rc2),str(rc3),str(rc4)))
 
-                # self.cage.stat(Kerr)
+                if not rc1 or not rc2 or not rc3 or not rc4:
+                    pr("19 HTMS_Low_Err   HT file(-s) not closed.  rc= cf:%s  bf: %s  af:%s  adt: %s Kerr=%s"%\
+                        (str(rc1), str(rc2),str(rc3),str(rc4), str(Kerr)))
+                    raise HTMS_Low_Err("19 HTMS_Low_Err   HT file(-s) not closed. rc= cf:%s  bf: %s  af:%s  adt: %s Kerr=%s"%\
+                        (str(rc1), str(rc2),str(rc3),str(rc4), str(Kerr)))
 
         if "cage" in self.__dict__:
             del self.cage
@@ -728,12 +819,13 @@ class HT(object):
 
         HT.removeinstances(self)
 
+        self.closed=True
         del self
         return True
 
     # -------------------------------------------------------------------------------------------
 
-    def update_attrs(self, add_attrs={}):
+    def add_ht_attrs(self, add_attrs={}):
 
         if self.mode in ('rs', 'rm' ) :
                 pr(
@@ -745,44 +837,94 @@ class HT(object):
                     % (self.mode, self.ht_name)
                 )
 
-        """
-        if  len( self.attrs) ==0 :
-            kerr=[]
-            self.attribute(kerr, fun='add', attr_name='Back_links', type= '*link')
-            if is_err( kerr ) >= 0 :      
-                pr ('19 HTMS_Low_Err    Error create "Back_links" HT atrribute.  err = %s' % str (kerr) )
-                raise HTMS_Low_Err('19 HTMS_Low_Err    Error create new HT atrribute.  err = %s' % str (kerr)  )
-            kerr=[]
-        """
         if len(add_attrs) == 0:
-            return 0
+            return (0, set() ) 
 
-        found = False
+        num_attrs=0
+        names_attrs=set()
+
         for attr_name in add_attrs:
-            for attr_num in self.attrs.keys():
-                if self.attrs[attr_num]["name"] == attr_name:
-                    found = True
-                    break
-            if found:
-                continue
+            generic=False
+            mark=attr_name.find('__')
+            if mark>-1:
+                name= attr_name[:mark]
+                numb= attr_name[mark+2:]
+                try:
+                    num=int(numb)
+                except:
+                    pass
+                else:
+                    if num> MAX_GENERIC_ATTR_NUM:
+                        num= MAX_GENERIC_ATTR_NUM     # MAX_GENERIC_ATTR_NUM -  from htms_par_low
+                    generic=True
+            if not generic:
+                found = False
+                for attr_num in self.attrs.keys():
+                    if self.attrs[attr_num]["name"] == attr_name:
+                        if  hasattr(self,"relations") and \
+                            attr_name in self.relations and\
+                            self.relations[ attr_name ] == 'erased':
+                            pass
+                        else:
+                            found = True
+                        break
+                if found:
+                    num_attrs+=1
+                    names_attrs.add(attr_name)
+                    continue
+                else:
+                    kerr = []
+                    self.attribute(
+                        kerr, fun="add", attr_name=attr_name, type=add_attrs[attr_name]
+                    )
+                    if is_err(kerr) >= 0:
+                        pr(
+                            "20 HTMS_Low_Err    Error create new HT atrribute.  err = %s"
+                            % str(kerr)
+                        )
+                        raise HTMS_Low_Err(
+                            "20 HTMS_Low_Err    Error create new HT atrribute.  err = %s"
+                            % str(kerr)
+                        )
+                    num_attrs+=1
+                    names_attrs.add(attr_name)
             else:
-                kerr = []
-                self.attribute(
-                    kerr, fun="add", attr_name=attr_name, type=add_attrs[attr_name]
-                )
-                if is_err(kerr) >= 0:
-                    pr(
-                        "20 HTMS_Low_Err    Error create new HT atrribute.  err = %s"
-                        % str(kerr)
-                    )
-                    raise HTMS_Low_Err(
-                        "20 HTMS_Low_Err    Error create new HT atrribute.  err = %s"
-                        % str(kerr)
-                    )
+                for n in range(1,num+1):
+                    gen_name=name+'__'+str(n) 
+                    found = False
+                    for attr_num in self.attrs.keys():
+                        if self.attrs[attr_num]["name"] == gen_name:
+                            if  hasattr(self,"relations") and \
+                                gen_name in self.relations and\
+                                self.relations[ gen_name ] == 'erased':
+                                pass
+                            else:
+                                found = True
+                            break
+                    if found:
+                        num_attrs+=1
+                        names_attrs.add(gen_name)
+                        continue
+                    else:
+                        kerr = []
+                        self.attribute(
+                            kerr, fun="add", attr_name=gen_name, type=add_attrs[attr_name]
+                        )
+                        if is_err(kerr) >= 0:
+                            pr(
+                                "21 HTMS_Low_Err    Error create new HT generic atrribute.  err = %s"
+                                % str(kerr)
+                            )
+                            raise HTMS_Low_Err(
+                                "21 HTMS_Low_Err    Error create new HT generic atrribute.  err = %s"
+                                % str(kerr)
+                            )
+                        num_attrs+=1
+                        names_attrs.add(gen_name)
 
         self.updated = time.time()
 
-        return len(add_attrs)
+        return num_attrs, names_attrs
 
     # -------------------------------------------------------------------------------------------
 
@@ -822,33 +964,60 @@ class HT(object):
                 self.updated = time.time()
                 return True
             else:
+                found=False
                 for natr in self.attrs:
                     if attr_name == self.attrs[natr]["name"]:
-                        set_err_int(
-                            Kerr,
-                            Mod_name,
-                            "attribute " + self.ht_name,
-                            2,
-                            message='Attribute name "%s" is wrong - already used.'
-                            % attr_name,
-                        )
-                        return False
-
-                new_num = max(self.attrs.keys()) + 1
-                self.attrs[new_num] = {
-                    "name": attr_name,
-                    "type": type,
-                    "setted": t,
-                    "updated": t,
-                }
-
-                new_models = (False,)
-                if len(self.mafs) > 0:
-                    for nmaf in self.mafs:
-                        new_models += (self.models[nmaf] + (False,),)
+                        if  hasattr(self,"relations") :
+                            if  self.relations[ attr_name ] != 'erased':
+                                set_err_int(
+                                    Kerr,
+                                    Mod_name,
+                                    "attribute " + self.ht_name,
+                                    2,
+                                    message='Attribute name "%s" is wrong - already used.'
+                                    % attr_name,
+                                )
+                                return False
+                            else:
+                                found=True
+                                self.attrs.update({natr: {
+                                    "name": attr_name,
+                                    "type": type,
+                                    "setted": t,
+                                    "updated": t,}})   
+                                new_models = (False,)
+                                for nmaf in self.mafs:
+                                    before= self.models[nmaf][0:natr]
+                                    after=  self.models[nmaf][natr+1:]
+                                    new_models += (before+(False,)+after, )
+                                self.relations.pop( attr_name )
+                                break
+                        else:
+                            set_err_int(
+                                    Kerr,
+                                    Mod_name,
+                                    "attribute " + self.ht_name,
+                                    3,
+                                    message='Attribute name "%s" is wrong - already used.'
+                                    % attr_name,
+                            )
+                            return False
+                if not found:
+                    new_num = max(self.attrs.keys()) + 1
+                    self.attrs[new_num] = {
+                        "name": attr_name,
+                        "type": type,
+                        "setted": t,
+                        "updated": t,
+                    }
+                    new_models = (False,)
+                    if len(self.mafs) > 0:
+                        for nmaf in self.mafs:
+                            new_models += (self.models[nmaf] + (False,),)
 
                 self.models = new_models
                 del new_models
+
                 self.updated = time.time()
 
                 if self.mode not in ('rs', 'rm' ):
@@ -857,7 +1026,7 @@ class HT(object):
                             Kerr,
                             Mod_name,
                             "attribute " + self.ht_name + "-" + str(self.maf_num),
-                            3,
+                            4,
                             message="Error save HTD.",
                         )
                         return False
@@ -872,7 +1041,7 @@ class HT(object):
                     Kerr,
                     Mod_name,
                     "attribute " + self.ht_name,
-                    4,
+                    5,
                     message="No atributes in HT.",
                 )
                 return False
@@ -881,7 +1050,7 @@ class HT(object):
                     Kerr,
                     Mod_name,
                     "attrs " + self.ht_name,
-                    5,
+                    6,
                     message='Argument "newname" is empty.',
                 )
                 return False
@@ -889,7 +1058,7 @@ class HT(object):
                 if attr_name == self.attrs[natr]["name"]:
                     self.attrs[natr]["name"] = newname
                     t = time.time()
-                    self.attrs[natr]["update"] = t
+                    self.attrs[natr]["updated"] = t
                     self.updated = time.time()
 
                     if "relations" in self.__dict__ and attr_name in self.relations:
@@ -902,7 +1071,7 @@ class HT(object):
                                 Kerr,
                                 Mod_name,
                                 "attribute " + self.ht_name + "-" + str(self.maf_num),
-                                6,
+                                7,
                                 message="Error save HTD.",
                             )
 
@@ -916,7 +1085,7 @@ class HT(object):
                 Kerr,
                 Mod_name,
                 "attribute " + self.ht_name,
-                7,
+                8,
                 message='Attribute with "attr_name" not found.',
             )
             return False
@@ -926,7 +1095,7 @@ class HT(object):
                 Kerr,
                 Mod_name,
                 "attribute " + self.ht_name,
-                8,
+                10,
                 message="Delete attribute not supported at low level in HT.",
             )
             return False
@@ -937,7 +1106,7 @@ class HT(object):
                     Kerr,
                     Mod_name,
                     "attribute " + self.ht_name,
-                    9,
+                    11,
                     message="No atributes in HT.",
                 )
                 return False
@@ -953,7 +1122,7 @@ class HT(object):
                     Kerr,
                     Mod_name,
                     "attribute " + self.ht_name,
-                    10,
+                    12,
                     message='Attribute with "attr_name" not found.',
                 )
                 return False
@@ -963,7 +1132,7 @@ class HT(object):
                         Kerr,
                         Mod_name,
                         "attribute " + self.ht_name,
-                        11,
+                        13,
                         message='Attribute with number "attr_num_p" not found.',
                     )
                     return False
@@ -977,12 +1146,13 @@ class HT(object):
                 Kerr,
                 Mod_name,
                 "attribute " + self.ht_name,
-                12,
+                15,
                 message="Invalid function.",
             )
             return False
 
     # -------------------------------------------------------------------------------------------
+
 
     def update_cf(
         self, Kerr=[], fun="", attr_num_p=0, maf_num_p=0, after_row=-1, num_rows=0
@@ -999,8 +1169,6 @@ class HT(object):
                 )
                 return False
 
-        #from htorm import Obj_RAM
-
         if DEBUG_UPDATE_CF_1 or DEBUG_UPDATE_CF_2:
             pr(
                 "\n\n  UPDATE_CF ---   fun = %s, attr_num_p=%d, maf_num_p=%d,  after_row = %d, num_rows = %d"
@@ -1012,10 +1180,12 @@ class HT(object):
         field_remove = False
         row_add = False
         row_delete = False
+        temp_mafs=set()          # for DEBUG
 
         zero = struct.pack(">LL", 0, 0)
 
         len_elem = 4
+        descr_len= 16
 
         if fun == "atr_remove":
             atr_remove = True
@@ -1081,8 +1251,8 @@ class HT(object):
                 return False
 
             if maf_remove:
-                attr_num_p = 0  # apply to all fields of maf
-                after_row = 0  # apply to all rows of maf
+                attr_num_p = 0          # apply to all fields of maf
+                after_row = 0           # apply to all rows of maf
 
             else:
                 if field_remove:
@@ -1095,7 +1265,7 @@ class HT(object):
                             message="attr_num_p out of range. ",
                         )
                         return False
-                    after_row = 0  # apply to all rows of maf
+                    after_row = 0       # apply to all rows of maf
 
                 if row_add or row_delete:
                     if after_row < 0 or after_row > old_max_row_num:
@@ -1120,22 +1290,27 @@ class HT(object):
         if self.c_free == 0:
             return True
 
-        # structure of each update_fields in cf - each elem - packed in 4 bytes integer
-        #                                   |------------array of links----------------------|
-        #  dim-nmaf-attr_num-nrow-{nmaf-nrow nmaf-nrow ....  nmaf-nrow} FFF
-        #  |---- descriptor--------|          0                1                (num_rows-1)        | end marker b'\xFFFFFFFFFFFFFFFF'
-        #  |--source of update_fields--|
+        # structure link's and weights blocks in cf   (see alsow in data_types.py)
+        #                           
+        #  for *link                |----array of 8 byte's links-------|
+        #  dim-nmaf-attr_num-nrow-  {nmaf-nrow nmaf-nrow ....  nmaf-nrow}   b'\xFF'*8    
+        #  |--descriptor 16 b----|     0         1          (num_rows-1)|   end marker           
+        #         or
+        #  for *weight              |------------array of 12 byte's weights-----------------|
+        #  dim-nmaf-attr_num-nrow-  {nmaf-nrow-weight nmaf-nrow-weight ....  nmaf-nrow-weight}  b'\xFF'*8
+        #  |--descriptor 16 b----|       0                1                    (num_rows-1) |   end marker
 
         if maf_remove or atr_remove or row_delete or row_add or field_remove:
-            #      edit cf
+            #   need to  edit cf
             shift = 0
             err = ""
             delay_kerr = 0
-            #    loop on sets of adresses
+
+            #    loop on set of  all link's and weights blocks
             while shift < self.c_free:
 
                 adr_list_new = b""  #
-                descr = self.cage.read(self.channels["cf"], shift, len_elem * 4, Kerr)
+                descr = self.cage.read(self.channels["cf"], shift, 16, Kerr)
                 shift_descr = shift
                 if descr == False:
                     set_err_int(
@@ -1159,15 +1334,24 @@ class HT(object):
                     )
                     return False
 
-                if DEBUG_UPDATE_CF_2:
-                    pr(
-                        "  update_cf --  read descr :   dim =%d,    maf=%d,    atr=%d,     nrow =%d"
-                        % (dim, maf, atr, nrow)
-                    )
+                atr_type= self.attrs [atr]['type']
+                atr_name= self.attrs [atr]['name']
+                atr_cf_elem_len= Types_htms.types [atr_type][1]
 
+                if DEBUG_UPDATE_CF_2:
+                    print(
+                     "\n  update_cf --  read descr :   dim =%d,    maf=%d,    atr=%d,     nrow =%d"
+                            % (dim, maf, atr, nrow)
+                        )
+                    print(
+                            "                               atr_type=%s,    atr_name=%s,    atr_cf_elem_len=%d"
+                            %( atr_type, atr_name, atr_cf_elem_len) 
+                        )
+
+                new_nrow = 0
+                                
                 if dim == 0 or maf == 0:  #  descriptor already cleared
                     pass
-
                 else:
                     if (
                         maf < 0
@@ -1175,7 +1359,7 @@ class HT(object):
                         or atr < 1
                         or atr > max_attr_num
                         or nrow < 1
-                    ):
+                        ):
                         set_err_int(
                             Kerr,
                             Mod_name,
@@ -1188,7 +1372,7 @@ class HT(object):
                         (row_add or row_delete)
                         and maf == maf_num_p
                         and nrow > old_max_row_num
-                    ):
+                        ):
                         set_err_int(
                             Kerr,
                             Mod_name,
@@ -1198,7 +1382,6 @@ class HT(object):
                         )
                         return False
 
-                    new_nrow = 0
                     #  read and modify (if need ) descriptor of sef of adresses
 
                     if maf == maf_num_p or maf_num_p == 0:
@@ -1211,13 +1394,12 @@ class HT(object):
                                 # attribute MAF match or not need to consider
                                 if (
                                     atr_remove and attr_num_p != 0
-                                ):  #  deleted attribute MAF match
+                                ):  # deleted attribute MAF match
                                     # clear set of adresses
                                     maf = 0
                                 elif (
                                     field_remove and maf_num_p != 0 and attr_num_p != 0
-                                ):
-                                    # deleted attribute MAF match
+                                ):  # deleted attribute MAF match
                                     # clear set of adresses
                                     maf = 0
                                 else:
@@ -1258,11 +1440,10 @@ class HT(object):
                     if maf == 0 or new_nrow > 0:  # rewrite descriptor
 
                         if DEBUG_UPDATE_CF_2:
-                            pr(
+                            print(
                                 "  update_cf --  NEW descr  :   dim =%d,    maf=%d,    atr=%d,     nrow =%d  newrow=%d"
                                 % (dim, maf, atr, nrow, new_nrow)
                             )
-
                         rc = self.cage.write(
                             self.channels["cf"], shift_descr, new_descr, Kerr
                         )
@@ -1277,12 +1458,12 @@ class HT(object):
                             return False
 
                 if maf == 0 or dim == 0 or atr_remove or field_remove:
-                    shift += len_elem * 4 + dim * len_elem * 2
+                    shift += 16 + dim * atr_cf_elem_len
 
                 else:  #        if maf_remove or row_delete or row_add
-                    shift += len_elem * 4
+                    shift += 16
                     adr_list = self.cage.read(
-                        self.channels["cf"], shift, len_elem * 2 * dim, Kerr
+                        self.channels["cf"], shift, atr_cf_elem_len * dim, Kerr
                     )
                     pos_adr_list = shift
                     if adr_list == False:
@@ -1296,16 +1477,22 @@ class HT(object):
                         )
                         return False
 
-                    shift += dim * len_elem * 2
+                    shift += dim * atr_cf_elem_len
                     change = False
                     dim_new = dim
                     for i in range(0, dim):
-                        # loop on adresses (links) in set
+                        # loop on links or weights in block
                         try:
-                            maf1, row1 = struct.unpack(
-                                ">LL",
-                                adr_list[i * len_elem * 2 : (i + 1) * len_elem * 2],
-                            )
+                            if atr_type=="*link":
+                                maf1, row1 = struct.unpack(
+                                    ">LL",
+                                    adr_list[i*8 : (i+1)*8],
+                                )
+                            elif atr_type=="*weight":
+                                maf1, row1, we1 = struct.unpack(
+                                    ">LLf",
+                                    adr_list[i*12 : (i+1)*12],
+                                )
                         except struct.error as err:
                             set_err_int(
                                 Kerr,
@@ -1317,21 +1504,19 @@ class HT(object):
                             return False
 
                         if DEBUG_UPDATE_CF_2:
-                            pr(
-                                "  update_cf --                 i =%d,    maf[ i ]=%d,   row[ i ]=%d "
+                            print(
+                                "  update_cf --                 i =%d,    maf[ i ]=%d,   ROW[ i ]=%d "
                                 % (i, maf1, row1)
                             )
 
                         if maf1 == 0 or row1 == 0:  # link is zero or link to all maf
-                            continue
+                            # delete link
+                            dim_new -= 1
+                            change = True
 
                         if maf1 != 0 and maf1 == maf_num_p:  # MAF matched
                             if maf_remove:  # removed MAF matched
-                                # delete link
-                                adr_list_new = (
-                                    adr_list_new[: i * len_elem * 2]
-                                    + adr_list[(i + 1) * len_elem * 2 :]
-                                )
+                                            # delete link
                                 dim_new -= 1
                                 change = True
                             elif row_delete:
@@ -1342,58 +1527,64 @@ class HT(object):
                                     # MAF row after deleted range -
                                     # correct number
                                     new_row = row1 - num_rows
-                                    new_link = struct.pack(">LL", maf1, new_row)
-                                    adr_list_new = (
-                                        adr_list_new[: i * len_elem * 2] + new_link
-                                    )  # +   adr_list [  (i+1)*len_elem*2 : ]
+                                    if DEBUG_UPDATE_CF_2:
+                                        print(
+                                            "  update_cf --   when row delete     NEW ROW=%d, "
+                                            % (new_row)
+                                        )
+                                    if atr_type=="*link":
+                                        new_link = struct.pack(">LL", maf1, new_row)
+                                    elif atr_type=="*weight":
+                                        new_link = struct.pack(">LLf", maf1, new_row, we1)                                       
+                                    adr_list_new += new_link
                                     change = True
 
                                     if DEBUG_UPDATE_CF_2:
-                                        pr(
-                                            "  update_cf --                                                      new_row[ i ]=%d "
+                                        print(
+                                            "  update_cf --              new_row[ i ]=%d "
                                             % new_row
                                         )
-
                                 elif row1 > after_row and row1 <= (
                                     after_row + num_rows
                                 ):
                                     # clear link
-                                    # adr_list_new = adr_list_new [ :  i*len_elem*2 ] +  adr_list [  (i+1)*len_elem*2 : ]
                                     dim_new -= 1
                                     change = True
 
                                     if DEBUG_UPDATE_CF_2:
-                                        pr(
-                                            "  update_cf --                                                      link deleted "
+                                        print(
+                                            "  update_cf -- link deleted "
                                         )
-
                                 elif row1 > old_max_row_num:
                                     # found row number greater than last number - clear it
-                                    # adr_list_new = adr_list_new [ :  i*len_elem*2 ] +   adr_list [  (i+1)*len_elem*2 : ]
                                     dim_new -= 1
                                     change = True
                                     delay_kerr = 472
                                 else:
-                                    adr_list_new = (
-                                        adr_list_new[: i * len_elem * 2]
-                                        + adr_list[
-                                            i * len_elem * 2 : (i + 1) * len_elem * 2
-                                        ]
-                                    )
+                                    adr_list_new += adr_list[
+                                                        i * atr_cf_elem_len :
+                                                       (i + 1) * atr_cf_elem_len
+                                                    ]
 
                             else:  #  if (row_add ) :
                                 if row1 > after_row and row1 <= old_max_row_num:
                                     # MAF row after added range  and saved- correct number
                                     new_row = row1 + num_rows
-                                    new_link = struct.pack(">LL", maf1, new_row)
-                                    adr_list_new = (
-                                        adr_list_new[: i * len_elem * 2] + new_link
-                                    )  # +   adr_list [  (i+1)*len_elem*2 : ]
-                                    change = True
-
                                     if DEBUG_UPDATE_CF_2:
-                                        pr(
-                                            "  update_cf --                                                      new_row[ i ]=%d "
+                                        print(
+                                            "  update_cf --   when row add    NEW ROW=%d, "
+                                            % (new_row)
+                                        )
+                                    if atr_type=="*link":
+                                        new_link = struct.pack(">LL", maf1, new_row)
+                                    if atr_type=="*weight":
+                                        new_link = struct.pack(">LLf", maf1, new_row, we1)
+                                    adr_list_new += new_link
+                                    
+                                    change = True
+                                    if DEBUG_UPDATE_CF_2:
+                                        print(
+                                            "  update_cf --                  new_row[ i ]=%d "
                                             % new_row
                                         )
 
@@ -1404,21 +1595,20 @@ class HT(object):
                                     change = True
                                     delay_kerr = 473
                                 else:
-                                    adr_list_new = (
-                                        adr_list_new[: i * len_elem * 2]
-                                        + adr_list[
-                                            i * len_elem * 2 : (i + 1) * len_elem * 2
-                                        ]
-                                    )
+                                    adr_list_new += adr_list[
+                                                        i * atr_cf_elem_len :
+                                                       (i + 1) * atr_cf_elem_len
+                                                    ]
                         else:
-                            adr_list_new = (
-                                adr_list_new[: i * len_elem * 2]
-                                + adr_list[i * len_elem * 2 :]
-                            )
-
+                            adr_list_new += adr_list[
+                                                     i * atr_cf_elem_len :
+                                                     (i + 1) * atr_cf_elem_len
+                                                    ]
+                    new_marker= b"" + b"\xFF"*(dim-dim_new)*atr_cf_elem_len
                     if change:
                         rc = self.cage.write(
-                            self.channels["cf"], pos_adr_list, adr_list_new, Kerr
+                            self.channels["cf"], pos_adr_list, 
+                            adr_list_new + new_marker, Kerr
                         )
                         if rc == False:
                             set_err_int(
@@ -1432,12 +1622,9 @@ class HT(object):
                             return False
                     if dim_new < dim:  # rewrite descriptor
                         if new_nrow > 0:
-                            new_descr = struct.pack(
-                                ">LLLL", dim_new, maf, atr, new_nrow
-                            )
-
+                            new_descr = struct.pack(">LLLL", dim_new, maf, atr, new_nrow )
                             if DEBUG_UPDATE_CF_2:
-                                pr(
+                                print(
                                     "  update_cf --   NEW DESCR       dim =%d,    maf=%d,    atr=%d,     new_nrow=%d "
                                     % (dim_new, maf, atr, new_nrow)
                                 )
@@ -1446,7 +1633,7 @@ class HT(object):
                             new_descr = struct.pack(">LLLL", dim_new, maf, atr, nrow)
 
                             if DEBUG_UPDATE_CF_2:
-                                pr(
+                                print(
                                     "  update_cf --   NEW DESCR       dim =%d,    maf=%d,    atr=%d,     nrow =%d "
                                     % (dim_new, maf, atr, nrow)
                                 )
@@ -1463,14 +1650,18 @@ class HT(object):
                                 message="cf write error.",
                             )
                             return False
-
+                    else:
+                        if DEBUG_UPDATE_CF_2:
+                                print(
+                                    "  update_cf --   DESCR NOT CHANGED"
+                                )
+                        pass
                 # search of end marker
                 m_found = False
-                while shift < self.c_free:
+                while shift <= self.c_free-8:                   # 8 - end marker length
                     marker = self.cage.read(
-                        self.channels["cf"], shift, len_elem * 2, Kerr
+                        self.channels["cf"], shift, 8, Kerr     # 8 - end marker length
                     )
-                    shift += len_elem * 2
                     if marker == False:
                         set_err_int(
                             Kerr,
@@ -1482,9 +1673,16 @@ class HT(object):
                         return False
                     elif marker == b"\xFF" * 8:
                         m_found = True
-                    elif marker != b"\xFF" * 8 and m_found:
-                        shift -= len_elem * 2
+                        shift += 8 
+                        while shift <= self.c_free-4:
+                            ff = self.cage.read(
+                                    self.channels["cf"], shift, 4, Kerr  
+                                 )
+                            if ff != b"\xFF" * 4:
+                                break
+                            shift+=4
                         break
+                    shift+=4
 
                 if not m_found:
                     # marker not found
@@ -1496,6 +1694,11 @@ class HT(object):
                         message="marker of end of link update_fields not found.",
                     )
                     return False
+
+            if DEBUG_UPDATE_CF_2:
+                for nmaf in temp_mafs:
+                    if self.mafs[nmaf]["opened"]:
+                        self.mafs_opened[nmaf].close(Kerr)
 
             if delay_kerr != 0:
                 set_warn_int(
@@ -1518,7 +1721,7 @@ class HT(object):
                 return False
             """
             if DEBUG_UPDATE_CF_1 or DEBUG_UPDATE_CF_2:
-                pr("  UPDATE_CF ---   FINISH")
+                print("  UPDATE_CF ---   FINISH")
 
             if DEBUG_UPDATE_CF_1:
                 for tab in self.mafs_opened:
@@ -1542,42 +1745,47 @@ class HT(object):
 
 
 def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="", 
-              new_ht_name="", jwt_temp_cage="",cage_name= "", zmq_context =False):
+              new_ht_name="", jwt_temp_cage="",cage_name= "", 
+              zmq_context =False, local_root=""):
 
     for db in HT.getinstances():
         if db.ht_name == ht_name:
             pr('30 HTMS_Low_Err    Data base  "%s" opened. ' % ht_name)
             raise HTMS_Low_Err('30 HTMS_Low_Err     Data base  "%s" opened. ' % ht_name)
-
-    if jwt_temp_cage== "" and ( ("JWTOKEN" not in globals()) or JWTOKEN==None or JWTOKEN=="") : 
-        pr('32 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name)
-        raise HTMS_Low_Err(
-                '32 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name
-        )
-    else:
-        if jwt_temp_cage =='':
-            jwtoken= JWTOKEN
+    if local_root=="":
+        if jwt_temp_cage== "" and ( ("JWTOKEN" not in globals()) or JWTOKEN==None or JWTOKEN=="") : 
+            pr('32 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name)
+            raise HTMS_Low_Err(
+                    '32 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name
+            )
         else:
-            jwtoken= jwt_temp_cage
-    try:
-        payload = jwt.decode(jwtoken, algorithms=['HS256'], options={"verify_signature": False})
-    except InvalidTokenError as err:
-        pr( '33HTMS_Low_Err HT  Error during  new HT "%s" . Invalid JW token, error: %s' \
-                    % (ht_name, HTMS_Low_Err) 
-        )
+            if jwt_temp_cage =='':
+                jwtoken= JWTOKEN
+            else:
+                jwtoken= jwt_temp_cage
         try:
-            ht.close()
-        except:
-            pass
-        raise HTMS_Low_Err(
-            '33 HTMS_Low_Err HT  Error during initializing new HT "%s" . Invalid JW token, error: %s' \
-                    % (ht_name, HTMS_Low_Err) 
-        )   
+            payload = jwt.decode(jwtoken, algorithms=['HS256'], options={"verify_signature": False})
+        except InvalidTokenError as err:
+            pr( '33HTMS_Low_Err HT  Error during  new HT "%s" . Invalid JW token, error: %s' \
+                        % (ht_name, HTMS_Low_Err) 
+            )
+            try:
+                ht.close()
+            except:
+                pass
+            raise HTMS_Low_Err(
+                '33 HTMS_Low_Err HT  Error during initializing new HT "%s" . Invalid JW token, error: %s' \
+                        % (ht_name, HTMS_Low_Err) 
+            )   
     
-    if zmq_context== None or zmq_context==False :
-        zmq_cont = zmq.Context()
+        if zmq_context== None or zmq_context==False :
+            zmq_cont = zmq.Context()
+        else:
+            zmq_cont= zmq_context
     else:
-        zmq_cont= zmq_context
+        jwtoken=""
+        zmq_cont=False
+        server_ip= {}
 
     ht=False
     try:
@@ -1589,7 +1797,8 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
             new=False,
             cage_name= cage_name,
             zmq_context =zmq_cont,
-            mode='wm'
+            mode='wm',
+            local_root=local_root
             )
     except:
         pr('31 HTMS_Low_Err    HT  "%s" open error. ' % ht_name)
@@ -1598,7 +1807,6 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
         except:
             pass
         raise HTMS_Low_Err('31 HTMS_Low_Err     HT  "%s" open error. ' % ht_name)
-   #time.sleep(2.0) 
 
     old_file_name = {}
     old_file_name["adt"] = posixpath.join(
@@ -1636,10 +1844,11 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
             *(ht_root.split(os.path.sep) + [new_ht_name + "_" + str(nmaf) + ht.ext["maf"]])
         )
 
-    server_ip={CAGE_SERVER_NAME: ht.server_ip}
-
-    temp_cage_name="temp_"+ht.cage_name+(b"\x00" * 4).decode('utf-8')+jwtoken
-
+    if local_root=="":
+        server_ip={CAGE_SERVER_NAME: ht.server_ip}
+        temp_cage_name="temp_"+ht.cage_name+(b"\x00" * 4).decode('utf-8')+jwtoken
+    else:
+        temp_cage_name="temp_"+ht.cage_name+(b"\x00" * 4).decode('utf-8')
     try:
             ht.close()
     except:
@@ -1653,6 +1862,7 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
             maxstrlen=MAXSTRLEN1,
             server_ip=server_ip,
             zmq_context =zmq_cont,
+            local_root=local_root,
             mode='wm'
         )
     except Exception as er:
@@ -1660,7 +1870,6 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                 raise HTMS_Low_Err(
                     '35 HTMS_Low_Err HT  Error "%s" from Cage in rename HT "%s" .' % (er,ht_name)
                 )           
-   #time.sleep(0.1)        
     try:
         for fil in old_file_name:
             temp_cage.file_rename(
@@ -1669,7 +1878,6 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                  new_name=new_file_name[fil], 
                  Kerr=[]
             )
-       #time.sleep(0.1)
     except Exception as rc:
         pr(
             '37 HTMS_Low_Err   Renaming files of HT "%s" error rc =%s '
@@ -1682,7 +1890,6 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
         )
 
     adt_file = temp_cage.open(CAGE_SERVER_NAME, new_file_name["adt"], Kerr)
-   #time.sleep(0.1)
     if adt_file == False:
         pr('38 HTMS_Low_Err    ADT  "%s" open error. ' % ht_name)
         del temp_cage
@@ -1706,7 +1913,7 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
     mem = pickle.dumps(dict_adt)
     len_adt = len(mem)
     len_adt_bytes = struct.pack(">L", len_adt)
-   #time.sleep(0.1)
+
     if not temp_cage.write(adt_file, 0, len_adt_bytes, Kerr):
         pr(
             '42 HTMS_Low_Err    Counter not saved in ADT file  "%s" - write error. '
@@ -1716,32 +1923,31 @@ def rename_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
         raise HTMS_Low_Err(
             '42 HTMS_Counter not saved in ADT file  "%s" - write errorr. ' % ht_name
         )
-   #time.sleep(0.1)
     if not temp_cage.write(adt_file, 4, mem, Kerr):
         pr(
-            '43 HTMS_Low_Err    Dictionary of HT instance not saved in ADT file  "%s" - write error. '
+            '44 HTMS_Low_Err    Dictionary of HT instance not saved in ADT file  "%s" - write error. '
             % ht_name
         )
         del temp_cage
         raise HTMS_Low_Err(
-            '44HTMS_Dictionary of HT instance not saved in ADT file  "%s" - write errorr. '
+            '44 HTMS_Low_Err    Dictionary of HT instance not saved in ADT file  "%s" - write errorr. '
             % ht_name
         )
 
     temp_cage.put_pages(adt_file, Kerr)
 
     del temp_cage
-    #time.sleep(1.)
     return True
 
 # ------------------------------------------------------------------------------------------------
 
-def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", cage_name= "", zmq_context =False):
+def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", 
+              jwt_temp_cage="", cage_name= "", zmq_context =False, local_root="", ):
 
     for db in HT.getinstances():
         if db.ht_name == ht_name:
-            pr('40 HTMS_Low_Err    Data base  "%s" opened. ' % ht_name)
-            raise HTMS_Low_Err('30 HTMS_Low_Err     Data base  "%s" opened. ' % ht_name)
+            pr('45 HTMS_Low_Err    Data base  "%s" opened. ' % ht_name)
+            raise HTMS_Low_Err('45 HTMS_Low_Err     Data base  "%s" opened. ' % ht_name)
 
     if jwt_temp_cage== "" and ( ("JWTOKEN" not in globals()) or JWTOKEN==None or JWTOKEN=="") : 
         pr('46 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name)
@@ -1769,10 +1975,16 @@ def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", c
         )  
     ht= False
 
-    if zmq_context== None or zmq_context==False :
-        zmq_cont = zmq.Context()
+    if local_root=="":
+  
+        if zmq_context== None or zmq_context==False :
+            zmq_cont = zmq.Context()
+        else:
+            zmq_cont= zmq_context
     else:
-        zmq_cont= zmq_context
+        jwtoken=""
+        zmq_cont=False
+        server_ip= {}
 
     try:
         ht = HT(
@@ -1783,16 +1995,17 @@ def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", c
             new=False,
             cage_name= cage_name,
             zmq_context =zmq_cont,
-            mode='wm'
+            mode='wm',
+            local_root=local_root
             )
     except:
-        pr('45 HTMS_Low_Err    HT  "%s" open error. ' % ht_name)
+        pr('48 HTMS_Low_Err    HT  "%s" open error. ' % ht_name)
         try:
             ht.close()
         except:
             pass
-        raise HTMS_Low_Err('45 HTMS_Low_Err     HT  "%s" open error. ' % ht_name)          
-   #time.sleep(2.0)
+        raise HTMS_Low_Err('48 HTMS_Low_Err     HT  "%s" open error. ' % ht_name)          
+
     old_file_name = {}
     old_file_name["adt"] = posixpath.join(
             *(ht_root.split(os.path.sep) + [ht_name + ht.ext["adt"]])
@@ -1812,8 +2025,11 @@ def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", c
             *(ht_root.split(os.path.sep) + [ht_name + "_" + str(nmaf) + ht.ext["maf"]])
         )
 
-    server_ip={CAGE_SERVER_NAME: ht.server_ip}
-    temp_cage_name="temp_"+cage_name+(b"\x00" * 4).decode('utf-8')+jwtoken
+    if local_root=="":
+        server_ip={CAGE_SERVER_NAME: ht.server_ip}
+        temp_cage_name="temp_"+ht.cage_name+(b"\x00" * 4).decode('utf-8')+jwtoken
+    else:
+        temp_cage_name="temp_"+ht.cage_name+(b"\x00" * 4).decode('utf-8')
 
     try:
             ht.close()
@@ -1828,15 +2044,16 @@ def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", c
             maxstrlen=MAXSTRLEN1,
             server_ip=server_ip,
             zmq_context =zmq_cont,
-            mode='wm'
+            mode='wm',
+            local_root=local_root
         )
     except Exception as er:
-                pr('48 HTMS_Low_Err HT  Error "%s" from Cage in delete HT "%s" .' % (er,ht_name))
+                pr('49 HTMS_Low_Err HT  Error "%s" from Cage in delete HT "%s" .' % (er,ht_name))
                 del temp_cage
                 raise HTMS_Low_Err(
-                    '48 HTMS_Low_Err HT  Error "%s" from Cage in delete HT "%s" .' % (er,ht_name)
+                    '49 HTMS_Low_Err HT  Error "%s" from Cage in delete HT "%s" .' % (er,ht_name)
                 ) 
-   #time.sleep(0.1)
+
     try:
         for fil in old_file_name:                    
             temp_cage.file_remove(
@@ -1845,20 +2062,19 @@ def delete_ht(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", c
                  Kerr=[]
             )
             
-           #time.sleep(0.1)
     except Exception as rc:
         pr(
-            '49 HTMS_Low_Err   Deleting files of HT "%s" error rc =%s '
+            '50 HTMS_Low_Err   Deleting files of HT "%s" error rc =%s '
             % (ht_name, str(rc))
         )
         del temp_cage
         raise HTMS_Low_Err(
-            '49 HTMS_Low_Err    Deleting files of HT "%s" error rc =%s '
+            '50 HTMS_Low_Err    Deleting files of HT "%s" error rc =%s '
             % (ht_name, str(rc))
         )
     
     del temp_cage
-    #time.sleep(1.)
+
     return True
                                                                      
 # ------------------------------------------------------------------------------------------------
@@ -1882,17 +2098,19 @@ def get_maf( ht_name, n_maf ):
 
 def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="", 
                 new_ht_name="", new_ht_root ='', 
-                jwt_cage="",cage_name= "",zmq_context =False):
+                jwt_cage="",cage_name= "",zmq_context =False, local_root=""):
 
-        for db in HT.getinstances():
-            if db.ht_name == ht_name:
-                pr('60 HTMS_Low_Err    Data base  "%s" opened. ' % ht_name)
-                raise HTMS_Low_Err('60 HTMS_Low_Err     Data base  "%s" opened. ' % ht_name)       
+    for db in HT.getinstances():
+        if db.ht_name == ht_name:
+            pr('59 HTMS_Low_Err    Data base  "%s" opened. ' % ht_name)
+            raise HTMS_Low_Err('59 HTMS_Low_Err     Data base  "%s" opened. ' % ht_name)       
 
+
+    if local_root=="":
         if jwt_cage== "" and ( ("JWTOKEN" not in globals()) or JWTOKEN==None or JWTOKEN=="") : 
-            pr('46 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name)
+            pr('60 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name)
             raise HTMS_Low_Err(
-                    '46 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name
+                    '60 HTMS_Low_Err HT  Error during initializing HT "%s" . JWT empty.' % ht_name
             )
         else:
             if jwt_cage =='':
@@ -1903,23 +2121,26 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
         try:
                 payload = jwt.decode(jwtoken, algorithms=['HS256'], options={"verify_signature": False})
         except InvalidTokenError as err:
-                pr( '61HTMS_Low_Err HT  Error during  copy HT "%s" . Invalid JW token, error: %s' \
+                pr( '61 HTMS_Low_Err HT  Error during  copy HT "%s" . Invalid JW token, error: %s' \
                                 % (ht_name, HTMS_Low_Err) 
                 )     
                 raise HTMS_Low_Err(
                         '61 HTMS_Low_Err HT  Error during copy HT "%s" . Invalid JW token, error: %s' \
                                 % (ht_name, HTMS_Low_Err) 
                 ) 
-
-        if new_ht_root =='':
-             new_ht_root =ht_root
-
         if zmq_context== None or zmq_context==False :
             zmq_cont = zmq.Context()
         else:
             zmq_cont= zmq_context
+    else:
+        jwtoken=""
+        zmq_cont=False
+        server_ip= {}
 
-        try:
+    if new_ht_root =='':
+         new_ht_root =ht_root
+
+    try:
             ht = HT(
                 server_ip=server_ip, 
                 ht_name=ht_name, 
@@ -1928,13 +2149,14 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                 new=False,
                 cage_name= cage_name,
                 zmq_context =zmq_cont,
-                mode='wm'
+                mode='wm',
+                local_root=local_root
                 )
-        except:
+    except:
             pr('63 HTMS_Low_Err  Old HT  "%s" open error. ' % ht_name)
             raise HTMS_Low_Err('63 HTMS_Low_Err   Old HT  "%s" open error. ' % ht_name)
 
-        try:
+    try:
             new_ht = HT( 
                 server_ip=server_ip,
                 ht_name= new_ht_name, 
@@ -1943,9 +2165,10 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                 new = True,
                 cage_name= '*'+cage_name,
                 zmq_context =zmq_cont,
-                mode='wm'
+                mode='wm',
+                local_root=local_root
                 )
-        except:
+    except:
             pr ('64 HTMS_Low_Err     Error creating/opening new HT for copy. ')
             try:
                 ht.close()
@@ -1953,47 +2176,80 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                 pass
             raise HTMS_Low_Err('64 HTMS_Low_Err      Error creating new HT for copy. ' )  
 
-        if hasattr(ht,"relations"):
-            new_ht.relations={}
+    if len(ht.attrs.keys()) == 0:
+            add_attrs={}
 
-       #time.sleep(0.1)
-        add_attrs= {   ht.attrs[ nattr] ['name'] : ht.attrs[ nattr] ['type']    \
+    elif  ht.attrs[1] ['name'] == 'Back_links' and \
+              ht.attrs[2] ['name'] == 'Time_row' :
+            if len(ht.attrs.keys()) >= 3 and ht.attrs[3] ['name'] == 'Back_weights':
+                add_attrs={ ht.attrs[ nattr] ['name'] : ht.attrs[ nattr] ['type']    \
                                 for nattr in ht.attrs   if   \
                                     not ( "relations" in ht.__dict__ and \
                                             ht.attrs[ nattr] ['name'] in ht.relations and\
                                             ht.relations[ ht.attrs[ nattr] ['name']] == 'erased')
-                            }
+                          }
+            else:
+                add_attrs={'Back_links':'*link', 'Time_row':'time', 'Back_weights':'*link'}
+                if len(ht.attrs.keys()) > 2:
+                    add_attrs.update({ ht.attrs[ nattr] ['name'] : ht.attrs[ nattr] ['type']    \
+                                for nattr in ht.attrs   if   \
+                                    nattr >2 and not ( "relations" in ht.__dict__ and \
+                                            ht.attrs[ nattr] ['name'] in ht.relations and\
+                                            ht.relations[ ht.attrs[ nattr] ['name']] == 'erased')
+                          })    
+    else:
+            add_attrs= { ht.attrs[ nattr] ['name'] : ht.attrs[ nattr] ['type']    \
+                            for nattr in ht.attrs   if   \
+                                not ( "relations" in ht.__dict__ and \
+                                        ht.attrs[ nattr] ['name'] in ht.relations and\
+                                        ht.relations[ ht.attrs[ nattr] ['name']] == 'erased')
+                       }
 
-        new_ht.update_attrs( add_attrs=add_attrs )
+    new_ht.add_ht_attrs( add_attrs=add_attrs )
 
-        new_nmafs={}
-        #is_file_fields= False
-        is_link_fields= False
+    if hasattr(ht,"relations"):
+            new_ht.relations={}
+            for nattr in new_ht.attrs:
+                atr_name=new_ht.attrs[ nattr] ['name']
+                if atr_name in ht.relations:
+                   new_ht.relations[atr_name]=ht.relations[atr_name]
 
-        for old_nmaf in ht.mafs:
+    new_nmafs={}
+
+    is_link_fields= False
+    is_weight_fields= False
+
+    for old_nmaf in ht.mafs:
 
             if ht.mafs[old_nmaf]['name'] [ : 8] != 'deleted:':
 
                 new_maf= MAF ( ht=new_ht , maf_name= ht.mafs[ old_nmaf] ['name'] )
-               #time.sleep(0.1)
+
                 new_nmaf=  new_maf.maf_num
                 new_nmafs[ old_nmaf ] = new_nmaf
                 old_maf=None
-                """
-                is_file_fields= False
-                is_link_fields= False
-                """
+
                 for nattr in new_ht.attrs:
-                    #if nattr in (1,2):
-                        #continue
+
                     attr_name = new_ht.attrs [ nattr]['name']
-                    old_nattr, old_attr_type = ht.get_attr_num_and_type( attr_name=attr_name)
-                    if ht.models [ old_nmaf ] [ old_nattr ] :
+                    if attr_name=='Back_weights' and  \
+                                   ht.get_attr_num_and_type( attr_name='Back_weights')==():
+                        # for copyind old HT without *weight data type
+                        old_nattr=0 
+                        old_attr_type = 'Back_weights'
                         new_maf.field( attr_num_f= nattr )
-                    #if old_attr_type == 'file':
-                        #is_file_fields= True
-                    elif old_attr_type == '*link':
                         is_link_fields= True
+                    else:
+                        old_nattr, old_attr_type = \
+                            ht.get_attr_num_and_type( attr_name=attr_name)
+
+                        if ht.models [ old_nmaf ] [ old_nattr ] :
+                            new_maf.field( attr_num_f= nattr )
+                        else:
+                            if old_attr_type == '*link':
+                                is_link_fields= True
+                            elif old_attr_type == '*weight':
+                                is_weight_fields= True
 
                 if ht.mafs[old_nmaf]['rows'] >0:
                     old_maf= MAF ( ht=ht , maf_num = old_nmaf)
@@ -2018,9 +2274,10 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                             kerr=[]
                             attr_name = new_ht.attrs [ nattr]['name']
                             data_type = new_ht.attrs [ nattr][ 'type' ]
-                            old_nattr = ht.get_attr_num_and_type( attr_name=attr_name)[0]
-
-                            if  new_ht.models [ new_nmaf] [ nattr ] and  data_type != '*link':
+                            
+                            if  new_ht.models [ new_nmaf] [ nattr ] and \
+                                not data_type in ('*link', '*weight'):
+                                old_nattr = ht.get_attr_num_and_type( attr_name=attr_name)[0]
                                 rc=True
                                 if data_type[:3]  == 'dat':
                                     df=  old_maf.r_utf8(Kerr=kerr, attr_num=old_nattr, num_row =nrow)
@@ -2057,16 +2314,26 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                                             Kerr
                                     )   
                                     if  old_maf_elem != b'\xFF'*32:
-                                        old_bf_addr_file , old_file_length =   struct.unpack( '>QQQQ', old_maf_elem) [ 2: ]
-                                        old_file_descr= old_maf.r_file_descr (Kerr = kerr , attr_num=old_nattr, num_row =nrow,  )
+                                        old_bf_addr_file , old_file_length = struct.unpack(
+                                                                     '>QQQQ', old_maf_elem) [ 2: ]
+                                        old_file_descr= old_maf.r_file_descr (
+                                            Kerr = kerr , attr_num=old_nattr, num_row =nrow,  )
 
                                     if  old_maf_elem ==  b'\xFF'*32 or \
                                         old_file_descr == False or \
                                         old_file_descr == None or \
                                         old_file_length ==0: 
 
-                                        new_file_descr = None
                                         new_maf_elem = b'\xFF'* 32
+
+                                        new_maf_elem_offset = new_maf.offsets [nattr] [0]
+
+                                        rc3 =  new_ht.cage.write( 
+                                                new_maf.ch,   
+                                                ( nrow - 1 )* new_maf.rowlen + new_maf_elem_offset,   
+                                                new_maf_elem , 
+                                                kerr
+                                            )   
 
                                     else:
 
@@ -2151,20 +2418,20 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                                         
                                         new_ht.a_free +=  len(new_file_descr) 
 
-                                    new_maf_elem =  struct.pack ('>QQQQ',  
-                                            new_af_addr_descr,  
-                                            len(new_file_descr), 
-                                            new_bf_addr_file , 
-                                            new_file_length 
-                                    )
+                                        new_maf_elem =  struct.pack ('>QQQQ',  
+                                                new_af_addr_descr,  
+                                                len(new_file_descr), 
+                                                new_bf_addr_file , 
+                                                new_file_length 
+                                        )
 
-                                    new_maf_elem_offset , new_maf_elem_length = new_maf.offsets [nattr] 
-                                    rc3 =  new_ht.cage.write( 
-                                            new_maf.ch,   
-                                            ( nrow - 1 ) *new_maf.rowlen+new_maf_elem_offset,   
-                                            new_maf_elem , 
-                                            kerr
-                                        )   
+                                        new_maf_elem_offset , new_maf_elem_length = new_maf.offsets [nattr] 
+                                        rc3 =  new_ht.cage.write( 
+                                                new_maf.ch,   
+                                                ( nrow - 1 ) *new_maf.rowlen+new_maf_elem_offset,   
+                                                new_maf_elem , 
+                                                kerr
+                                            )   
                                     if rc3 == False:
                                             try:
                                                 ht.close()
@@ -2177,73 +2444,88 @@ def deepcopy_ht(Kerr=[], server_ip="", ht_name="", ht_root="",
                                             raise HTMS_Low_Err ('72 HTMS_Low_Err   Error write MAF.' )
 
                 new_maf.close() 
-               #time.sleep(0.1)
                 if old_maf != None:
                     old_maf.close()
-               #time.sleep(0.1)
 
-        if is_link_fields:
+    if is_link_fields:
             for old_nmaf in new_nmafs:
                 new_nmaf=  new_nmafs[old_nmaf]
                 new_maf = MAF ( ht= new_ht, maf_num = new_nmaf )
-               #time.sleep(0.1)
                 old_maf =   MAF ( ht= ht, maf_num = old_nmaf)
-               #time.sleep(0.1)
                 if new_ht.mafs[new_nmaf]['rows'] >0:
                    for nrow in range (1, new_ht.mafs[new_nmaf]['rows'] +1):
                         for nattr in new_ht.attrs:
                             kerr=[]
                             attr_name = new_ht.attrs [ nattr]['name']
                             data_type = new_ht.attrs [ nattr][ 'type' ]
-                            old_nattr = ht.get_attr_num_and_type( attr_name=attr_name)[0]
-                            if  new_ht.models [ new_nmaf] [ nattr ]  and  data_type == '*link':
-                                    rc=True
-                                    links = old_maf.r_links(Kerr=kerr,  attr_num=old_nattr, num_row =nrow)
-                                    if links==False:
-                                        raise HTMS_Low_Err (
-                                            '73 HTMS_Low_Err   Error read links field "%s"  in row %d  of MAF %s (%d). Kerr= %s'  %    \
-                                                    ( attr_name, nrow, old_maf.maf_name, old_nmaf, str(kerr)) 
-                                        )
-                                    new_links=()
-                                    if links !=():
-                                        for li in links:
-                                            nmaf_in_link=li[0]
-                                            nrow_in_link=li[1]
-                                            new_links+=( (new_nmafs[ nmaf_in_link], nrow_in_link),)
-                                        rc = new_maf.w_links(Kerr=kerr,  attr_num=nattr, num_row =nrow, links =new_links)
-                                        if rc == False:
-                                            pass
+                            ht_get_attr_num_and_type= ht.get_attr_num_and_type( attr_name=attr_name)
+                            if ht_get_attr_num_and_type!=():
+                                old_nattr = ht_get_attr_num_and_type[0]
+                                if  new_ht.models [ new_nmaf] [ nattr ]: 
+                                    if  data_type == '*link':
+                                        rc=True
+                                        links = old_maf.r_links(Kerr=kerr,  attr_num=old_nattr, num_row =nrow)
+                                        if links==False:
+                                            raise HTMS_Low_Err (
+                                                '73 HTMS_Low_Err   Error read links field "%s"  in row %d  of MAF %s (%d). Kerr= %s'  %    \
+                                                        ( attr_name, nrow, old_maf.maf_name, old_nmaf, str(kerr)) 
+                                            )
+                                        new_links=()
+                                        if links !=():
+                                            for li in links:
+                                                nmaf_in_link=li[0]
+                                                nrow_in_link=li[1]
+                                                new_links+=( (new_nmafs[ nmaf_in_link], nrow_in_link),)
+                                            rc = new_maf.w_links(Kerr=kerr,  attr_num=nattr, num_row =nrow, links =new_links)
+                                            if rc == False:
+                                                pass
+                                    elif  data_type == '*weight':
+                                        rc=True
+                                        weights = old_maf.r_weights(Kerr=kerr,  attr_num=old_nattr, num_row =nrow)
+                                        if weights==False:
+                                            raise HTMS_Low_Err (
+                                                '74 HTMS_Low_Err   Error read weights field "%s"  in row %d  of MAF %s (%d). Kerr= %s'  %    \
+                                                        ( attr_name, nrow, old_maf.maf_name, old_nmaf, str(kerr)) 
+                                            )
+                                        new_weights=()
+                                        if weights !=():
+                                            for wi in weights:
+                                                nmaf_in_weight=wi[0]
+                                                nrow_in_weight=wi[1]
+                                                weight_in_weight=wi[2]
+                                                new_weights+=( (new_nmafs[ nmaf_in_weight], nrow_in_weight, weight_in_weight),)
+                                            rc = new_maf.w_weights(Kerr=kerr,  attr_num=nattr, num_row =nrow, weights =new_weights)
+                                            if rc == False:
+                                                pass
+
                 new_maf.close() 
-               #time.sleep(0.1)
                 old_maf.close()
-               #time.sleep(0.1)
 
-       #time.sleep(0.1)
-        ht.close()
-       #time.sleep(0.1)
-        new_ht.close()
+    ht.close()
+    new_ht.close()
 
-        return True
+    return True
 
 # -------------------------------------------------------------------------------------------
 
 
-def compress_ht(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage="",cage_name="", zmq_context =False):
+def compress_ht(Kerr=[], server = '', ht_name='', ht_root = '', 
+                jwt_temp_cage="",cage_name="", zmq_context =False, local_root=""):
 
         for db  in HT.getinstances():
             if  db.ht_name == ht_name:
                 pr ('80 HTMS_Low_Err     Data base  "%s" opened. '% ht_name )
-                raise HTMS_Low_Err('80 HTMS_Low_Err     Data base  "%s" opened. '% ht_name )       
-
+                raise HTMS_Low_Err('80 HTMS_Low_Err     Data base  "%s" opened. '% ht_name ) 
         try:
-
             temp_db_name='_temp_'+ht_name
-
-            if zmq_context== None or zmq_context==False :
-                zmq_cont = zmq.Context()
+            if local_root=="":
+                if zmq_context== None or zmq_context==False :
+                    zmq_cont = zmq.Context()
+                else:
+                    zmq_cont= zmq_context
             else:
-                zmq_cont= zmq_context
-
+                server={}
+                zmq_cont=False
             deepcopy_ht( 
                 server_ip=server, 
                 ht_name=ht_name, 
@@ -2251,23 +2533,23 @@ def compress_ht(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage=""
                 new_ht_name=temp_db_name, 
                 jwt_cage=jwt_temp_cage,
                 cage_name= cage_name,
-                zmq_context =zmq_cont
+                zmq_context =zmq_cont,
+                local_root=local_root
             )
             #print ('\n\n   temp_db_name copied')
-           #time.sleep(1)
-
             #print ('\n   db_name closed')     
-           #time.sleep(1)            
+         
             delete_ht(
                 server_ip=server, 
                 ht_name=ht_name,  
                 ht_root = ht_root , 
                 jwt_temp_cage=jwt_temp_cage,
                 cage_name=cage_name,
-                zmq_context =zmq_cont
+                zmq_context =zmq_cont,
+                local_root=local_root
             )
             #print ('\n\n   db_name deleted')    
-           #time.sleep(1)
+
             rename_ht(
                 server_ip=server, 
                 ht_root=ht_root, 
@@ -2275,7 +2557,9 @@ def compress_ht(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage=""
                 new_ht_name=ht_name, 
                 jwt_temp_cage=jwt_temp_cage,
                 cage_name= cage_name ,
-                zmq_context =zmq_cont
+                zmq_context =zmq_cont,
+                local_root=local_root
+
             )
             #print ('\n\n   db_name renamed')
 

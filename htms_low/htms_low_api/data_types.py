@@ -1,30 +1,42 @@
-# HTMS  v. 2.3
-# © A.S.Aliev, 2018-2021
+# HTMS  v. 3.1.0
+# © A.S.Aliev, 2018-2022
 
 class Types_htms( object ):
 
-    max_int4 =  2147483647                      #   struct.pack('>i', 2147483647 ) ==                      b'\x7F\xFF\xFF\xFF'
+    max_int4 =  2147483647             #   struct.pack('>i', 2147483647 ) ==     b'\x7F\xFF\xFF\xFF'
     max_int8 =  9223372036854775807    #   struct.pack('>q', 9223372036854775807 ) ==   b'\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-    nan_float4 = float('nan')                        #   struct.pack ('>f', float('nan')) ==                         b'\x7f\xc0\x00\x00'
-    nan_float8 = float('nan')                        #   struct.pack ('>d', float('nan')) ==                        b'\x7f\xf8\x00\x00\x00\x00\x00\x00'
+    nan_float4 = float('nan')          #   struct.pack ('>f', float('nan')) ==   b'\x7f\xc0\x00\x00'
+    nan_float8 = float('nan')          #   struct.pack ('>d', float('nan')) ==   b'\x7f\xf8\x00\x00\x00\x00\x00\x00'
   
     types ={
-	        "byte1":(1,1,b'\x00' ), "byte4":(4,4,b'\x00'*4), "byte8":(8,8,b'\x00'*8,), 	       #		elementary data - bytes array
-            "utf50":(100, 100, b'\xFF'*100 ),  "utf100":(200,200, b'\xFF'*200 ),               #      elementary data - string UTF-8 (without BOM)  
-            "int4":  (4,4,max_int4, '>i'),    "int8":  (8,8,max_int8, '>q' ), 		                   #		elementary data - integer
-            "float4":(4,4,nan_float4, '>f'), "float8":(8,8,nan_float8, '>d'), 		                   #		elementary data - float
-            "time":(8,8,0.0, '>d'),                     #    elementary data -  time.time() UTC, as float
+	        "byte1":(1,1,b'\x00' ), "byte4":(4,4,b'\x00'*4), "byte8":(8,8,b'\x00'*8,), 	 #		elementary data - bytes array
+            "utf50":(100, 100, b'\xFF'*100 ),  "utf100":(200,200, b'\xFF'*200 ),         #      elementary data - string UTF-8 (without BOM)  
+            "int4":  (4,4,max_int4, '>i'),     "int8":  (8,8,max_int8, '>q'),            #		elementary data - integer
+            "float4":(4,4,nan_float4, '>f'),   "float8":(8,8,nan_float8, '>d'),          #		elementary data - float
+            "time":(8,8,0.0, '>d'),               #    elementary data -  time.time() UTC, as float
             "datetime":(50, 50, b'\xFF'*50),      #    elementary data - date and time in user format, as UTF-8 string
-                                                                  #    for example:  datetime.datetime.now().strftime('%d.%m.%y  %H:%M:%S .%f') Local time 
+                                                       #    for example:  datetime.datetime.now().strftime('%d.%m.%y  %H:%M:%S .%f') Local time 
 
-	        "*link":(16,4,(-1,-1)),                      #   offset and length of "link's block"(LB) in CF file 
-                                                                  #   LB = LB descriptor + LB array + end marker ( b'\xFF'* 16)
-                                                                  #   LB descriptor =( dimention of LB array,  maf_num origin, attr_num origin, num_row origin)
-                                                                  #       dimention of LB array == 0 signalize that all content of LB is obsolete
-                                                                  #   LB array = ( (nmaf, nrow), ... (nmaf, nrow))
-	        "*byte":(16,1,b'\x00'),                    #   bytes array size <= MAXSTRLEN1( stores in AF file)
-	        "*utf":(16,2, b'\xFF',)             ,               #  string UTF-8 size <= MAXSTRLEN1/2 ( stores in AF file, without BOM)  
-            "*int4":  (16,4,max_int4, '>i'),   "*int8":  (16,8,max_int8, '>q'),	    #		array of integers ( stores in AF file)
+	        "*link":(16,8,(-1,-1)),               #   offset and length of "link's block"(LB) in CF file 
+                                                       #   LB = LB descriptor + LB array + end marker ( b'\xFF'* 8)
+                                                       #   LB descriptor =( dimention of LB array,  
+                                                       #                    maf_num origin, 
+                                                       #                    attr_num origin, 
+                                                       #                    num_row origin)
+                                                       #       dimention of LB array == 0 signalize that all content of LB is obsolete
+                                                       #   LB array = ( (nmaf, nrow), ... (nmaf, nrow))
+	        "*weight":(16,12,(-1,-1, 0.0)),       #   offset and length of the "block of numbered links"(NLB) in CF file 
+                                                       #   NLB = NLB descriptor + NLB array + end marker ( b'\xFF'* 8)
+                                                       #   NLB descriptor =( dimention of NLB array,  
+                                                       #                    maf_num origin, 
+                                                       #                    attr_num origin, 
+                                                       #                    num_row origin)
+                                                       #       dimention of NLB array == 0 signalize that all content of NLB is obsolete
+                                                       #   NLB array = ( (nmaf, nrow, weight), ... (nmaf, nrow, weight))
+                                                       #       weight - float4
+	        "*byte":(16,1,b'\x00'),               #   bytes array size <= MAXSTRLEN1( stores in AF file)
+	        "*utf":(16,2, b'\xFF',),              #  string UTF-8 size <= MAXSTRLEN1/2 ( stores in AF file, without BOM)  
+            "*int4":  (16,4,max_int4, '>i'),   "*int8":  (16,8,max_int8, '>q'),	   #		array of integers ( stores in AF file)
             "*float4":(16,4,nan_float4, '>f'),"*float8":(16,8,nan_float8, '>d'),   #		array of floats ( stores in AF file)
             #              |   |   |                   |
             #              |   |   |                   format for struct pack/unpack functions

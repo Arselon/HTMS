@@ -1,5 +1,142 @@
-# HTMS low level  v. 2.3 (Cage class v. 2.9)
-# © A.S.Aliev, 2018-2021
+# HTMS low level  v. 3.1.0 (Cage class v. 3.1.0)
+# © A.S.Aliev, 2018-2022
+
+# MAF class
+#
+#    MAF ( 
+#         ht,
+#         maf_num=0,
+#         maf_name = '',
+#         from_subclass=False
+#         )
+#
+#    @classmethods
+#
+#       getinstances()
+#       removeinstances(obj)
+#
+#    methods (commonly used)
+#
+#        rename (Kerr=[], new_maf_name='')
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        wipe (Kerr=[])
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        save (Kerr=[])
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        close (Kerr=[])
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        delete (Kerr=[])
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        field(Kerr=[], fun='add', attr_name='', attr_num_f=0)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        row(Kerr = [], fun='add',  after =-1, number=1, data= b'')
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        w_links (Kerr = [] , attr_num=0, num_row=0, links =set(), rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        r_links (Kerr = [] , attr_num=0 , num_row=0 )
+#           return tuple(links) 
+#           or 
+#           return False and error message in Kerr
+#        u_links (Kerr = [], attr_num=0, num_row=0, u_link =(), rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        w_weights (Kerr = [] , attr_num=0, num_row=0, weights =set(), rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        u_weights (Kerr = [] , attr_num=0, num_row=0,  u_weight =(), rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        r_weights (Kerr = [] , attr_num=0 , num_row=0 )
+#           return tuple(weights) 
+#           or 
+#           return False and error message in Kerr
+#        w_elem (Kerr = [] , attr_num=0, num_row =0, elem =b'')   
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        r_elem (Kerr = [] ,  attr_num=0, num_row = 0 )   
+#           return b(data) 
+#           or 
+#           return False and error message in Kerr
+#        w_utf8 (Kerr = [] , attr_num=0, num_row =0, string = '')
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        r_utf8 (Kerr = [] , attr_num=0 , num_row =0 )
+#           return str 
+#           or 
+#           return False and error message in Kerr   
+#        w_numbers (self, Kerr = [] , attr_num=0, num_row =0, numbers= 0, rollback=False)  
+#           return True 
+#           or 
+#           return False and error message in Kerr                 
+#        r_numbers (Kerr = [] ,  attr_num=0, num_row =0)
+#           return tuple(numbers) 
+#           or 
+#           return False and error message in Kerr  
+#        w_bytes (Kerr = [] , attr_num=0, num_row =0,  bytes= b'', rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr                 
+#        r_bytes (Kerr = [] , attr_num=0, num_row =0)
+#           return b(data) 
+#           or 
+#           return False and error message in Kerr
+#        r_str(Kerr = [] , attr_num=0, num_row =0)
+#           return str 
+#           or 
+#           return False and error message in Kerr  
+#        w_str (Kerr = [] , attr_num=0, num_row =0,  string= '', rollback=False)
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        upload_file (Kerr = [] , attr_num=0, num_row =0,  
+#                      from_path='', 
+#                      real_file_name='', 
+#                      file_e='', 
+#                      content_t='',  
+#                      file_d={},
+#                      rollback=False
+#         )
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        r_file_descr (Kerr = [], attr_num=0, num_row =0,)
+#           return file descriptor 
+#           or 
+#           return False and error message in Kerr
+#        download_file (Kerr = [] , attr_num=0, num_row =0, to_path='')
+#           return file descriptor
+#           or 
+#           return False and error message in Kerr
+#        clean_file_descr (Kerr = [] , attr_num=0, num_row =0, )
+#           return True 
+#           or 
+#           return False and error message in Kerr
+#        attr_type(n_attr=0)
+#           return attr_type 
+#           or
+#           if error - False
+#
 
 import os
 import posixpath
@@ -12,8 +149,9 @@ import math
 
 from cage_api             import  *
 
-from .htms_par_low     import   *
+from .htms_par_low        import   *
 from .data_types          import   *
+from .funcs               import   *
 
 Mod_name = '*'+__name__
     
@@ -55,18 +193,17 @@ class MAF():
             raise HTMS_Low_Err('09 HTMS_Low_Err     HT " %s " not exist. '% ht.name )
         """
         self.maf_name =''
-
+        self.closed= True
         self.ht = ht  
         self.ch = -1
         self.maf_num = 0
         self.offsets = ((0,1),)  
-        #self.fields = {}                                         #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if maf_num >0 and maf_num in self.ht.mafs:
             if maf_name != '' and self.ht.mafs[ maf_num ]['name' ] != maf_name:
                 pr ('10 HTMS_Low_Err    MAF names mismatch. MAF  not opened.')
                 raise HTMS_Low_Err('10 HTMS_Low_Err    MAF names mismatch. MAF  not opened.')
-            self.maf_num=    maf_num  #  MAF exist
+            self.maf_num=    maf_num                                #  MAF exist
             self.maf_name = self.ht.mafs[ maf_num ]['name' ]   
         elif  maf_num >0:
                 pr ('11 HTMS_Low_Err   MAF number not found in HT list of mafs. MAF  not opened.')
@@ -80,7 +217,7 @@ class MAF():
                         self.maf_num=  maf_num 
                         self.maf_name = maf_name
                         break
-                if not found:   # need to create new MAF
+                if not found:                                       # need to create new MAF
                     self.maf_name = maf_name
             else:
                 pr ('12 HTMS_Low_Err   MAF name and number are null values. MAF  not opened.')
@@ -90,8 +227,6 @@ class MAF():
             if not self.create ():
                 pr ('13 HTMS_Low_Err   Error creating MAF..')
                 raise HTMS_Low_Err('13 HTMS_Low_Err   Error creating MAF.')
-           #time.sleep(0.1)
-
         else:    
             if self.open() == False:
                 pr ('14 HTMS_Low_Err   Error opening MAF..')
@@ -106,13 +241,8 @@ class MAF():
         self.updated = self.ht.mafs[ self.maf_num]['updated']
 
         self.path = posixpath.join( *(self.ht.ht_root.split(os.path.sep)+[self.ht.ht_name+'_'+str(self.maf_num)+self.ht.ext['maf']]))
-        """
-        self.table_obj= copy.copy(self)
-        del   self.table_obj.ch, self.table_obj.ht, self.table_obj.null_row, self.table_obj.offsets, \
-                self.table_obj.setted, self.table_obj.updated, self.table_obj.rowlen, self.table_obj.rows, \
-                self.table_obj.maf_num, self.table_obj.path
-        self.table_obj.maf_object = self
-        """
+        
+        self.closed=False
 
 # -------------------------------------------------------------------------------------------
 
@@ -139,7 +269,7 @@ class MAF():
             del obj
 
 #------------------------------------------------------------------------------------------------
-    def create (self, Kerr= []):
+    def create (self, Kerr=[]):
 
             if self.ht.mode in ('rs', 'rm' ):
                 set_err_int (Kerr, Mod_name,   'create '+self.ht.ht_name+'-'+ str(self.maf_num), 8 , \
@@ -227,7 +357,7 @@ class MAF():
  
 #------------------------------------------------------------------------------------------------
 
-    def rename (self, Kerr= [], new_maf_name=''):
+    def rename (self, Kerr=[], new_maf_name=''):
 
         if self.ht.mode in ('rs', 'rm' ):
             set_err_int (Kerr, Mod_name,   'rename '+self.ht.ht_name+'-'+ str(self.maf_num), 1 , \
@@ -301,7 +431,7 @@ class MAF():
 
             self.ht.models=old_models 
             return False
-        rc2 = ht.update_cf (Kerr , fun = 'maf_remove', maf_num_p=  maf_num)
+        rc2 = ht.update_cf (Kerr , fun = 'maf_remove', maf_num_p=maf_num)
        #time.sleep(0.1)
         if not rc2 :
             set_err_int (Kerr, Mod_name,   'delete '+self.ht.ht_name+'-'+ str(maf_num), 2 , \
@@ -337,7 +467,7 @@ class MAF():
             #    return True 
 
             f_maf = posixpath.join( *(self.ht.ht_root.split(os.path.sep)+[self.ht.ht_name+'_'+str(self.maf_num)+self.ht.ext['maf']]))   
-            rc = self.ht.cage.open( CAGE_SERVER_NAME,  f_maf, Kerr, mod = mode ) 
+            rc = self.ht.cage.open( CAGE_SERVER_NAME, f_maf, Kerr, mod = mode ) 
            #time.sleep(0.1)
             if rc == False:
                 set_err_int (Kerr, Mod_name, 'open '+self.ht.ht_name+'-'+  str(self.maf_num), 1 , \
@@ -406,13 +536,44 @@ class MAF():
             #self.offsets =((0,1),)  
             #self.fields = {}
             #del self.table_obj
-            del self
+            self.closed= True
+            #del self
             return True
 
 # -------------------------------------------------------------------------------------------
 
-    def wipe(self, Kerr =[]):
+    def save(self, Kerr=[]):  
 
+        #return True
+        if not self.ht.mafs[  self.maf_num][ 'opened' ]:
+                return True 
+                
+#        self.ht.cage.stat(Kerr)
+
+        if "cage" in self.ht.__dict__:
+            rc = self.ht.cage.push_all( Kerr )  
+            
+            if rc == False:
+                set_err_int (Kerr, Mod_name, 'save '+self.ht.ht_name+'-'+  str(self.maf_num), 1 , \
+                                message='Error during save Cage for MAF  %s .' % self.maf_name )
+                return False
+            print('\n *** CAGE SAVED  ***' )  
+
+        if "cage2" in self.ht.__dict__:
+            rc = self.ht.cage2.push_all( Kerr )  
+
+            if rc == False:
+                set_err_int (Kerr, Mod_name, 'save '+self.ht.ht_name+'-'+  str(self.maf_num), 1 , \
+                                message='Error during save Cage2 for MAF  %s .' % self.maf_name )
+                return False
+
+            print('\n *** CAGE2 SAVED  ***' )  
+        
+        return True
+
+# -------------------------------------------------------------------------------------------
+
+    def wipe(self, Kerr =[]):
 
                 if self.ht.mode in ('rs', 'rm' ):
                     set_err_int (Kerr, Mod_name, 'wipe '+self.ht.ht_name+'-'+  str(self.maf_num), 5 , \
@@ -425,11 +586,11 @@ class MAF():
 
                 self.close(Kerr)
                #time.sleep(0.1)
-                self.ht.update_cf (Kerr , fun = 'maf_remove', maf_num_p= self.maf_num )
+                self.ht.update_cf (Kerr , fun = 'maf_remove', maf_num_p=self.maf_num )
                 rc3= True
                #time.sleep(0.1)
                 if hasattr(self.ht,"db_name"):
-                    self.ht.update_RAM (fun = 'maf_remove', maf_num_p= self.maf_num )
+                    self.ht.update_RAM (fun = 'maf_remove', maf_num_p=self.maf_num )
                 self.ht.mafs[ self.maf_num ] [ 'rows' ] =0
                 self.rows = 0
                 self.rowlen = 1
@@ -479,7 +640,7 @@ class MAF():
 
 # -------------------------------------------------------------------------------------------
 
-    def field(self, Kerr=[], fun='add',  attr_name='', attr_num_f=0):
+    def field(self, Kerr=[], fun='add', attr_name='', attr_num_f=0):
 
         if self.ht.mode in ('rs', 'rm' ):
             set_err_int (Kerr, Mod_name, 'field '+self.ht.ht_name+'-'+   str( self.maf_num ) , 29, \
@@ -688,44 +849,55 @@ class MAF():
                     set_err_int (Kerr, Mod_name, 'field '+self.ht.ht_name+'-'+ str( self.maf_num), 22, \
                                     message='Error close temp or old mafile.')
                     return False
-               #time.sleep(0.1) 
-                old_maf =  posixpath.join( *(self.ht.ht_root.split(os.path.sep)+[self.ht.ht_name+'_'+str(self.maf_num)+self.ht.ext['bak_maf'] ] ) )
+                file_name_mab=self.ht.ht_name+'_'+ str(self.maf_num)+self.ht.ext['bak_maf']
+                #if self.ht.no_server:
+                    #mab= file_name_mab
+                #else:
+                mab_name = posixpath.join( *(self.ht.ht_root.split(os.path.sep)+ [file_name_mab] ) )
 
                 kerr=[]
-                rc0 = self.ht.cage.file_remove( CAGE_SERVER_NAME, old_maf, kerr)    
-               #time.sleep(0.1)
-                kerr=[]
-                f_maf = posixpath.join( *(self.ht.ht_root.split(os.path.sep)+[self.ht.ht_name+'_'+str(self.maf_num)+self.ht.ext['maf']]))
+                rc0 = self.ht.cage.file_remove( CAGE_SERVER_NAME, mab_name, kerr)    
 
-                rc1 = self.ht.cage.file_rename( CAGE_SERVER_NAME, f_maf, old_maf, kerr)
-               #time.sleep(0.1)
-                if  rc1 == False or rc1 == -3:
+                kerr=[]
+                file_name_maf= self.ht.ht_name+'_'+ str(self.maf_num)+self.ht.ext['maf'] 
+                #if self.ht.no_server:
+                    #maf= file_name_maf
+                #else:
+                maf_name= posixpath.join( *(self.ht.ht_root.split(os.path.sep)+ [file_name_maf]))
+
+                rc1 = self.ht.cage.file_rename( CAGE_SERVER_NAME, maf_name, mab_name, kerr)
+
+                if  not rc1 :                            # rc1 == False or rc1 == -3:
                     set_err_int (Kerr, Mod_name, 'field '+self.ht.ht_name+'-'+ str( self.maf_num), 23, \
                                 message='Error renaming old mafile.')
                     return False
+                """
                 elif rc1 == -2:   #  -  try to delete old BAK_MAF
                     if len (Kerr) >0:  Kerr.pop()
                     if len (Kerr) >0:  Kerr.pop()
-                    rc11 =  self.ht.cage.file_remove( CAGE_SERVER_NAME,  old_maf, kerr)
+                    rc11 =  self.ht.cage.file_remove( CAGE_SERVER_NAME,  mab, kerr)
                    #time.sleep(0.1)
                     if   rc11 == True:
-                        rc12 = self.ht.cage.file_rename( CAGE_SERVER_NAME, f_maf, old_maf, kerr)
+                        rc12 = self.ht.cage.file_rename( CAGE_SERVER_NAME, maf_name, mab_name, kerr)
                        #time.sleep(0.1)
                     if   rc11 == False or rc12 == False:
                         set_err_int (Kerr, Mod_name, 'field '+self.ht.ht_name+'-'+ str( self.maf_num), 24, \
                                 message='Error renaming old mafile.')
                         return False
-
+                """
                 kerr=[]
-                if not self.ht.cage.file_rename( CAGE_SERVER_NAME, temp_maf, f_maf, Kerr):
+                if not self.ht.cage.file_rename( CAGE_SERVER_NAME, temp_maf, maf_name, Kerr):
                     set_err_int (Kerr, Mod_name, 'field '+self.ht.ht_name+'-'+ str( self.maf_num), 25, \
                         message='Error renaming new mafile.')
                     return False                
-               #time.sleep(0.1)
-                self.ch = self.ht.cage.open( CAGE_SERVER_NAME,  f_maf , Kerr, mod = old_mode ) 
-               #time.sleep(0.1)
+
+                self.ch = self.ht.cage.open( CAGE_SERVER_NAME,  maf_name , Kerr, mod = old_mode ) 
+
                 if fun =='delete':
-                    rc1 = self.ht.update_cf (Kerr , fun = 'field_remove', maf_num_p=self.maf_num,  attr_num_p = attr_num_f)
+                    rc1 = self.ht.update_cf (Kerr, 
+                                             fun = 'field_remove', 
+                                             maf_num_p=self.maf_num,  
+                                             attr_num_p=attr_num_f)
 
             self.updated= time.time()
             self.ht.mafs [ self.maf_num ][ 'updated' ]= self.updated        
@@ -749,7 +921,7 @@ class MAF():
 
 # -------------------------------------------------------------------------------------------
 
-    def row(self, Kerr = [] , fun='add',  after =-1, number=1, data= b''):
+    def row(self, Kerr = [], fun='add',  after =-1, number=1, data= b''):
 
         if self.ht.mode in ('rs', 'rm' ) and fun !='read':
             set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  5 , \
@@ -774,21 +946,46 @@ class MAF():
             after = self.rows
 
         if fun =='add':
-            if self.rowlen * (self.rows - after) < MAXSTRLEN1 and self.rowlen * number <  MAXSTRLEN1:
+            if self.rowlen * (self.rows - after) < MAXSTRLEN1 and \
+                self.rowlen * number <  MAXSTRLEN1:
                 if self.rows - after >0 :
-                    moved_rows = self.ht.cage.read(self.ch, (after) *self.rowlen, self.rowlen * (self.rows - after) , Kerr)
-                    rc1 = self.ht.cage.write(self.ch,  ( after + number ) *self.rowlen, moved_rows , Kerr)
-                rc2 = self.ht.cage.write(self.ch,  ( after ) *self.rowlen, number * self.null_row  , Kerr)
+                    moved_rows = self.ht.cage.read(
+                                          self.ch, 
+                                          (after) *self.rowlen, 
+                                          self.rowlen * (self.rows - after), 
+                                          Kerr)
+                    rc1 = self.ht.cage.write(
+                                          self.ch,  
+                                          ( after+number ) *self.rowlen, 
+                                          moved_rows, 
+                                          Kerr)
+                rc2 = self.ht.cage.write(
+                                          self.ch,  
+                                          ( after ) *self.rowlen, 
+                                          number * self.null_row, 
+                                          Kerr)
             else:
-                for r in range ( self.rows - 1, after -1, -1 ):
-                        moved_row = self.ht.cage.read(self.ch, ( r  ) *self.rowlen, self.rowlen , Kerr)
-                        rc = self.ht.cage.write(self.ch,  ( r + number ) *self.rowlen, moved_row , Kerr)
+                for r in range ( self.rows-1, after-1, -1 ):
+                        moved_row = self.ht.cage.read(
+                                          self.ch, 
+                                          ( r  ) *self.rowlen, 
+                                          self.rowlen , 
+                                          Kerr)
+                        rc = self.ht.cage.write(
+                                          self.ch,  
+                                          ( r+number ) *self.rowlen, 
+                                          moved_row, 
+                                          Kerr)
                         if not rc:
                             set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  4 , \
                                 message='Error write to MAF. ' )
                             return False
                 for r in range (after , after+number):
-                        rc = self.ht.cage.write(self.ch,  ( r  ) *self.rowlen, self.null_row , Kerr)
+                        rc = self.ht.cage.write(
+                                          self.ch,  
+                                          ( r ) *self.rowlen, 
+                                          self.null_row , 
+                                          Kerr)
                         if not rc:
                             set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  5 , \
                                 message='Error write to MAF. ' )
@@ -796,27 +993,25 @@ class MAF():
 
             self.rows += number
             self.ht.mafs[self.maf_num]['rows']= self.rows
-            """
-            tim0= time.time()/10.
-            offset = self.offsets [ 2 ] [ 0 ]
-            for n_row in range (after+1 , after+number+1):
-                time_row = struct.pack (  '>d', tim0*10.)
-                rc =  self.ht.cage.write( self.ch,  (n_row - 1) *self.rowlen+offset, time_row , Kerr)
-                if rc == False:
-                    set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  6 , \
-                                message='Error write time stamp to MAF. ' )
-                tim1= time.time()/10.
-                while (tim1 == tim0):
-                    tim1= time.time()/10.
-                tim0= time.time()/10.
-            """
+
             self.updated = time.time()     
-            self.ht.mafs [ self.maf_num ][ 'updated' ]= self.updated                  
+            self.ht.mafs [ self.maf_num ][ 'updated' ]= self.updated   
+
             if after< self.rows- number:           
-                rc1 = self.ht.update_cf (Kerr , fun = 'row_add', maf_num_p=self.maf_num,  after_row = after, num_rows = number)
+                rc1 = self.ht.update_cf (Kerr, 
+                                         fun = 'row_add', 
+                                         maf_num_p=self.maf_num,  
+                                         after_row = after, 
+                                         num_rows = number)
+            #"""
                 rc2= True
                 if hasattr(self.ht,"db_name"):
-                    rc2=self.ht.update_RAM ( fun = 'row_add', maf_num_p=self.maf_num,  after_row = after, num_rows = number)
+                    rc2=self.ht.update_RAM ( fun = 'row_add', 
+                                            maf_num_p=self.maf_num,  
+                                            after_row = after, 
+                                            num_rows = number)
+
+            #"""
             """
             if not self.ht.save_adt(Kerr):
                 set_err_int (Kerr, Mod_name,   'row '+self.ht.ht_name+'-'+ str(self.maf_num), 7 , \
@@ -843,12 +1038,26 @@ class MAF():
             if num >0 :
                 if  after +num <  self.rows:
                     if self.rowlen *  num < MAXSTRLEN1: 
-                        moved_rows = self.ht.cage.read(self.ch, (after+num ) *self.rowlen, self.rowlen *  (self.rows - ( after + num) ) , Kerr)
-                        rc = self.ht.cage.write(self.ch,  ( after) *self.rowlen, moved_rows , Kerr)
+                        moved_rows = self.ht.cage.read(
+                                    self.ch, 
+                                    (after+num ) * self.rowlen, 
+                                    self.rowlen * (self.rows - ( after + num) ), 
+                                    Kerr)
+                        rc = self.ht.cage.write(
+                                    self.ch,  
+                                    ( after) * self.rowlen, 
+                                    moved_rows , 
+                                    Kerr)
                     else:
                         for r in range (after+num, self.rows ):
-                            moved_row = self.ht.cage.read(self.ch, ( r ) *self.rowlen, self.rowlen , Kerr)
-                            rc = self.ht.cage.write(self.ch,  ( r - num ) *self.rowlen, moved_row , Kerr)
+                            moved_row = self.ht.cage.read(
+                                    self.ch, ( r ) *self.rowlen, 
+                                    self.rowlen , 
+                                    Kerr)
+                            rc = self.ht.cage.write(
+                                    self.ch,  
+                                    ( r - num ) *self.rowlen, 
+                                    moved_row , Kerr)
                             if not rc:
                                 set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  9 , \
                                     message='Error write to MAF. ' )
@@ -861,12 +1070,19 @@ class MAF():
             self.ht.mafs [ self.maf_num ][ 'updated' ]= self.updated                             
                             
             if num> 0:
-                if not self.ht.update_cf (Kerr , fun = 'row_delete', maf_num_p=self.maf_num,  after_row = after , num_rows = num) :
+                if not self.ht.update_cf (Kerr, 
+                                          fun = 'row_delete', 
+                                          maf_num_p=self.maf_num,  
+                                          after_row=after , 
+                                          num_rows=num) :
                     set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  10, \
                                     message='Error update links in CF. ' )
                     return False
                 if hasattr(self.ht,"db_name"):
-                    if not self.ht.update_RAM (fun = 'row_delete', maf_num_p=self.maf_num,  after_row = after , num_rows = num):
+                    if not self.ht.update_RAM (fun = 'row_delete', 
+                                               maf_num_p=self.maf_num,  
+                                               after_row = after , 
+                                               num_rows = num):
                         set_err_int (Kerr, Mod_name, 'row '+self.ht.ht_name+'-'+ self.maf_name,  10, \
                                     message='Error update links in RAM objects. ' )
                         return False
@@ -954,11 +1170,11 @@ class MAF():
             return False
 
         if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
                     message='num_row parameter over the  number of MAF rows.' )
             return False
         if self.attr_type( attr_num ) != "*link":
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
+            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  3 , \
                     message='attr_num parameter not corresponds with field data.' )
             return False
 
@@ -972,11 +1188,13 @@ class MAF():
             new_link_block= b''
 
             for a in range (0, len ( links_list ) ):
-                if not ( links_list [a][ 0 ]   in self.ht.mafs  and self.ht.mafs [  links_list [a][ 0 ] ]['name'][ : 8] != 'deleted:') :
+                if  not ( links_list [a][ 0 ]   in self.ht.mafs  and \
+                    self.ht.mafs [  links_list [a][ 0 ] ]['name'][ : 8] != 'deleted:') :
                     set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  5 , \
                         message='Links contains link to not existed MAF no. = %d' %  links_list [a][ 0 ] ) 
                     return False
-                if   links_list [a][ 1 ] < 0 or   links_list [a][ 1 ] > self.ht.mafs [ links_list [a][ 0 ]  ]['rows'] :
+                if  links_list [a][ 1 ] < 0 or \
+                    links_list [a][ 1 ] > self.ht.mafs [ links_list [a][ 0 ]  ]['rows'] :
                     set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  6 , \
                         message='Links contains link to not existed row  %d  in MAF no. = %d' % ( links_list [a][1], links_list [a][ 0 ] )  )
                     return False
@@ -990,12 +1208,12 @@ class MAF():
                         message='cf pack links error = %s.'% err )
                     return False      
 
-            len_new_cf_block = 16+ new_dim*8 + 8
+            len_new_cf_block = 16+ new_dim*Types_htms.types[ "*link" ][1]+ 8    #16+ new_dim*8 + 8
             overwrite = False               # write block on new place
 
             old_cf_link =  self.ht.cage.read( self.ch, (num_row-1)*self.rowlen+offset, 16 , Kerr)   
             if old_cf_link == False:
-                set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ self.maf_name,  3 , \
+                set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ self.maf_name,  8 , \
                             message='Error read CF block address from MAF. ' )
                 return False
             if old_cf_link != b'\xFF'*16:
@@ -1009,59 +1227,62 @@ class MAF():
             try:
                 descr_links= struct.pack('>LLLL', new_dim,  self.maf_num, attr_num, num_row )
             except struct.error as err:
-                set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  4 , \
+                set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  9 , \
                     message='cf pack descriptor error = %s.'% err )
                 return False      
 
             new_cf_block = descr_links + new_link_block + b'\xFF'*8  # end marker
            
             if overwrite:
-                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  old_cf_addr,   (new_cf_block + (len_old_cf_block - len_new_cf_block) * b'\xFF'  ), Kerr)   
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  old_cf_addr,   
+                          (new_cf_block + (len_old_cf_block-len_new_cf_block) * b'\xFF'), Kerr)   
                 if rc1 == False:
-                    set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  8 , \
+                    set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  10 , \
                         message='Error 1 write CF.' )
                     return False      
-                new_cf_link =    struct.pack ('>QQ',  old_cf_addr,   len_new_cf_block )
+                new_cf_link =    struct.pack ('>QQ',  old_cf_addr, len_new_cf_block )
             else:
                 # null maf to old links descriptor
                 if old_cf_addr != -1  :
                     maf_descr_zero = struct.pack('>L', 0 )
                     #pr('  W LINK Zero Descr    maf %d -->0,    atr=%d,     row=%d ' % \
                                     #(  self.maf_num, attr_num, num_row) )   
-                    rc0 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  old_cf_addr+4, maf_descr_zero,  Kerr)   
+                    rc0 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                              old_cf_addr+4, maf_descr_zero,  Kerr)   
                     if rc0 == False:
-                        set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  8 , \
+                        set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  11 , \
                             message='Error 2 write CF.' )
                         return False      
 
-                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  self.ht.c_free,  new_cf_block , Kerr)   
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  self.ht.c_free,  
+                                          new_cf_block , Kerr)   
                 if rc1 == False:
-                    set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  9 , \
+                    set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
                         message='Error write CF.' )
                     return False      
-                new_cf_link =                        struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block )
+                new_cf_link =  struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block )
 
                 self.ht.c_free += len (new_cf_block)     
                 """
                 if not self.ht.save_adt(Kerr):
-                    set_err_int (Kerr, Mod_name,   'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  10 , \
+                    set_err_int (Kerr, Mod_name,   'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  13 , \
                                     message='Error save HTD.' )
                     return False
                 """
         """
         if not self.ht.cage.put_pages ( self.ht.channels [ 'cf' ], Kerr):
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  11, \
+            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  15, \
                         message='Error CF push modified pages.' )   
             return False                        
         """
         rc2 =  self.ht.cage.write( self.ch,   (num_row-1)*self.rowlen+offset,   new_cf_link , Kerr)   
         if rc2 == False:
-            set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+            set_err_int (Kerr, Mod_name, 'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  16 , \
                         message='Error write MAF.' )
             return False
         """    
         if not self.ht.cage.put_pages ( self.ch, Kerr):
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  13, \
+            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  18, \
                         message='Error MAF push modified pages.' )
             return False
         """
@@ -1077,12 +1298,18 @@ class MAF():
     def r_links (self, Kerr = [] , attr_num=0 , num_row=0 ):
 
         if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
-                    message='num_row parameter over the  number of MAF rows.' )
+            set_err_int (Kerr, 
+                         Mod_name,  
+                         'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  
+                         1 , 
+                         message='num_row parameter over the  number of MAF rows.' )
             return False
         if self.attr_type( attr_num ) != "*link":
-            set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
-                    message='attr_num parameter not corresponds with field data.' )
+            set_err_int (Kerr, 
+                         Mod_name,  
+                         'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  
+                         2 , 
+                         message='attr_num parameter not corresponds with field data.' )
             return False
 
         links=()
@@ -1097,7 +1324,8 @@ class MAF():
 
         cf_addr, len_cf_block =   struct.unpack( '>QQ', cf_link )
 
-        if len_cf_block < 16  or len_cf_block > self.ht.c_free   or  cf_addr > self.ht.c_free -16 or  cf_addr < 0 :
+        if len_cf_block < 16  or len_cf_block > self.ht.c_free   or\
+                cf_addr > self.ht.c_free -16 or  cf_addr < 0 :
             set_err_int (Kerr, Mod_name,   'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  4, \
                         message='Information about CF block is corrupted in MAF. ' )
             return False
@@ -1117,8 +1345,15 @@ class MAF():
                 set_err_int (Kerr, Mod_name,   'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  6, \
                             message='Error write null CF block address in MAF.' )
                 return False 
-            return  links
+            return  links  # ()
 
+        if  maf_num !=  self.maf_num   or \
+            natr != attr_num or \
+            nrow != num_row:
+            set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  8 , \
+                        message='Data corruption in C file.' )
+            return False
+        """
         if  old_dim != ( len_cf_block  - 16 - 8 ) /8: # need to correct length, 
                         #  because update cf change dimension of links array
             new_len_cf_block = 16 + 8+ old_dim*8 
@@ -1128,17 +1363,11 @@ class MAF():
                 set_err_int (Kerr, Mod_name, 'r_links '+self.ht.ht_name+'-'+ str(self.maf_num),  7 , \
                         message='Error write MAF.' )
                 return False      
-
-        if  maf_num !=  self.maf_num   or \
-            natr != attr_num or \
-            nrow != num_row:
-            set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  8 , \
-                        message='Data corruption in C file.' )
-            return False
+        """
 
         lena = Types_htms.types[ "*link" ][ 1 ]
         for a in range(old_dim):
-            link = struct.unpack('>Li', cf_block [16+a*lena*2: 16+(a+1)*lena*2 ] )
+            link = struct.unpack('>Li', cf_block [16+a*lena: 16+(a+1)*lena ] )
             if link[ 0 ] != 0:
                 if not ( link[ 0 ]  in self.ht.mafs  and self.ht.mafs [ link[ 0 ] ]['name'][ : 8] != 'deleted:') :
                     set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  9 , \
@@ -1175,11 +1404,11 @@ class MAF():
             return False
 
         if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  2, \
                     message='num_row parameter over the  number of MAF rows.' )
             return False
         if self.attr_type( attr_num ) != "*link":
-            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
+            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  3 , \
                     message='attr_num parameter not corresponds with field data.' )
             return False
 
@@ -1190,23 +1419,22 @@ class MAF():
             new_cf_link = b'\xFF' *16
             rc =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, new_cf_link , Kerr)   
             if rc == False:
-                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  3 , \
+                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  4 , \
                                         message='Error write to MAF. ' )
                 return False
 
             self.updated = time.time()
             self.ht.mafs [ self.maf_num]['updated']= self.updated
             self.ht.updated =self.updated 
-
             return True
 
         elif u_link != ():
             if not ( abs (u_link[ 0 ] )   in self.ht.mafs  and self.ht.mafs [ abs (u_link[ 0 ] ) ]['name'][ : 8] != 'deleted:') :
-                set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  4, \
+                set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  5, \
                         message='Link to not existed MAF no. = %d' % u_link[ 0 ] ) 
                 return False            
             elif  u_link[ 1 ] !=0  and abs( u_link[ 1 ] ) > self.ht.mafs [ u_link[ 0 ] ]['rows'] :
-                set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  5 , \
+                set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  6 , \
                         message='Link to not existed row  %d  in MAF no. = %d' % ( abs (u_link[1] ), u_link[ 0 ] ) )
                 return False
 
@@ -1214,24 +1442,24 @@ class MAF():
 
         cf_link =  self.ht.cage.read( self.ch,  ( num_row - 1 )*self.rowlen+offset, 16 , Kerr)   
         if cf_link == False:
-            set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  6 , \
+            set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  7, \
                                 message='Error read from MAF. ' )
             return False
 
         if cf_link == b'\xFF'*16:
-            if  u_link[ 0 ]  < 0 or u_link [ 1 ] <0:
-                set_warn_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  7 , \
+            if  u_link[ 0 ]  <= 0 or u_link [ 1 ] <=0:
+                set_warn_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  8 , \
                                 message='Address of the set ot the links in MAF empty.' )
                 return True
             # create new set of links
             rc = self.w_links (Kerr, attr_num,  num_row , links = (u_link,) )
             if rc == False:
-                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  8 , \
+                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  9 , \
                                         message='Error in w_links. ' )
                 return False
             """
             if not self.ht.cage.put_pages ( self.ch, Kerr):
-                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  9 , \
+                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  10, \
                                 message='Error MAF push modified page ' )
                 return False
             """
@@ -1243,9 +1471,23 @@ class MAF():
 
         cf_addr, len_cf_block =   struct.unpack( '>QQ', cf_link )
 
+        if len_cf_block==0:
+            # create new set of links
+            rc = self.w_links (Kerr, attr_num,  num_row , links = (u_link,) )
+            if rc == False:
+                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  10 , \
+                                        message='Error in w_links. ' )
+                return False
+
+            self.updated = time.time()
+            self.ht.mafs [ self.maf_num]['updated']= self.updated
+            self.ht.updated =self.updated 
+
+            return True
+
         cf_block =  self.ht.cage.read( self.ht.channels [ 'cf' ], cf_addr, len_cf_block , Kerr)
         if cf_block == False:
-            set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  10 , \
+            set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  11 , \
                                 message='Error read from CF. ' )
             return False  
 
@@ -1253,46 +1495,35 @@ class MAF():
 
         if old_dim == 0 or maf_num == 0:
             if u_link[ 0 ]  < 0 or u_link [ 1 ] < 0 :            
-                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  11 , \
+                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
                                 message='Set ot the links in MAF empty.' )
                 zero_link = b'\xFF'* 16 # indicator of "null" set of links 
-                rc2 =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, zero_link , Kerr) 
+                rc2 =  self.ht.cage.write( self.ch,  (num_row-1 )*self.rowlen+offset, zero_link , Kerr) 
                 if rc2 == False:
-                    set_err_int (Kerr, Mod_name,    'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+                    set_err_int (Kerr, Mod_name,    'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  13 , \
                                 message='Error write null CF block address in MAF.' )
                 return False 
-            else:
-                rc = self.w_links (self, Kerr, attr_num,   num_row , links = (u_link,) )
+            else:  # write link from input parameter u_link
+                rc = self.w_links (Kerr, attr_num,   num_row , links = (u_link,) )
                 if rc == False:
-                    set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  13 , \
+                    set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  16 , \
                                             message='Error in w_links. ' )
                     return False
                 """
                 if not self.ht.cage.put_pages ( self.ch, Kerr):
-                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  14 , \
+                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  17 , \
                                     message='Error MAF push modified page ' )
                     return False
                 """
                 self.updated = time.time()
                 self.ht.mafs [ self.maf_num]['updated']= self.updated
                 self.ht.updated =self.updated 
-
                 return True
 
-        if  old_dim != ( len_cf_block  - 16 - 8 ) /8: # need to correct length, 
-                        #  because update cf change dimension of links array
-            new_len_cf_block = 16 + 8+ old_dim*8 
-            new_cf_link = struct.pack ('>QQ', cf_addr,  new_len_cf_block )
-            rc3 =  self.ht.cage.write( self.ch,   (num_row-1)*self.rowlen+offset,   new_cf_link , Kerr)
-            if rc3 == False:
-                set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  15 , \
-                        message='Error write MAF.' )
-                return False      
-
         if  maf_num != self.maf_num or \
-            attr_num != natr or \
-            nrow != num_row:
-            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  16, \
+            natr    != attr_num  or \
+            nrow    != num_row:
+            set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  19, \
                         message='Data corruption in C file.' )
             return False 
 
@@ -1303,22 +1534,22 @@ class MAF():
         if u_link[ 0 ]< 0:
             maf_to_delete = - u_link[ 0 ]
         else:
-            maf_to_delete = - 1
+            maf_to_delete = 0     # - 1  !!!!!!
 
         lena = Types_htms.types[ "*link" ][ 1 ]
         for a in range(old_dim):
-            lnk = struct.unpack('>Li', cf_block [16+a*lena*2: 16+(a+1)*lena*2 ] )
+            lnk = struct.unpack('>Li', cf_block [16+a*lena: 16+(a+1)*lena ] )
 
             if lnk [ 0 ] == 0: # found null link - miss it
                 change =  True
                 continue
             else:
                 if not ( lnk[ 0 ]  in self.ht.mafs  and self.ht.mafs [ lnk[ 0 ] ]['name'][ : 8] != 'deleted:') :
-                    set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  17, \
+                    set_err_int (Kerr, Mod_name,  'u_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  21, \
                         message='Data corruption in C file. Links contains link to not existed MAF no. = %d' % lnk[ 0 ] ) 
                     return False
                 elif  lnk[ 1 ] < 0 or  lnk[ 1 ] > self.ht.mafs [ lnk[ 0 ] ]['rows'] :
-                    set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  18, \
+                    set_err_int (Kerr, Mod_name,  'r_links '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  22, \
                         message='Data corruption in C file. Links contains link to not existed row  %d  in MAF no. = %d' % (lnk[1], lnk[ 0 ] ) )
                     return False
                 elif  lnk [ 0 ] == maf_to_delete : # delete link
@@ -1326,12 +1557,12 @@ class MAF():
                     change =  True
                     continue
                 elif  lnk [ 0 ] != u_link [ 0 ] : # not match - repeat link
-                    new_cf_links += cf_block [16+a*lena*2: 16+ (a+1)*lena*2 ] 
+                    new_cf_links += cf_block [16+a*lena: 16+ (a+1)*lena ] 
                     continue
                 # match  -  lnk [ 0 ] == u_link [ 0 ]
                 elif  lnk[ 1 ] ==  u_link [ 1 ] :  #already exist - repeat link
                     execute = True
-                    new_cf_links += cf_block [16+a*lena*2: 16+ (a+1)*lena*2 ] 
+                    new_cf_links += cf_block [16+a*lena: 16+ (a+1)*lena ] 
                     continue
                 elif u_link [ 1 ] ==0  : # need to set row num to 0 - miss old link
                     change =  True
@@ -1341,10 +1572,10 @@ class MAF():
                     change =  True
                     continue
                 else :    # need to add new link - repeat old link
-                    new_cf_links += cf_block [16+a*lena*2: 16+ (a+1)*lena*2 ] 
+                    new_cf_links += cf_block [16+a*lena: 16+ (a+1)*lena ] 
                     continue
        
-        if not execute and u_link [ 1 ] >= 0 and maf_to_delete == -1 :
+        if not execute and u_link [ 1 ] >= 0 and maf_to_delete == 0 :
             new_cf_links += struct.pack( '>Li', u_link[0], u_link[1])    
             change =  True
 
@@ -1354,14 +1585,15 @@ class MAF():
 
             if new_dim == 0:
                 new_cf_link = b'\xFF' *16
-                rc =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, new_cf_link , Kerr)   
+                rc =  self.ht.cage.write( self.ch,  
+                          (num_row-1)*self.rowlen+offset, new_cf_link , Kerr)   
                 if rc == False:
-                    set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  19 , \
+                    set_err_int (Kerr, Mod_name, 'u_links '+self.ht.ht_name+'-'+ self.maf_name,  23 , \
                                             message='Error write to MAF. ' )
                     return False
                 """
                 if not self.ht.cage.put_pages ( self.ch, Kerr):
-                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  20 , \
+                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  25 , \
                                     message='Error MAF push modified page ' )
                     return False
                 """
@@ -1378,10 +1610,10 @@ class MAF():
             if new_dim <= old_dim and not rollback: # write block on old place (with overlap)
                 rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  cf_addr, (new_cf_block +  (old_dim-new_dim) * b'\xFF' *8 ), Kerr )
                 if rc1 ==False:
-                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  21, \
+                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  26, \
                             message='Error 1 write to CF' )
                     return False
-                new_cf_link =   struct.pack ('>QQ',   cf_addr,  len_new_cf_block)
+                new_cf_link =   struct.pack ('>QQ', cf_addr, len_new_cf_block)
             else:   # write block on new place
                 # null to dim in old links descriptor
                 maf_descr_zero = struct.pack('>L', 0 )
@@ -1391,37 +1623,37 @@ class MAF():
 
                 rc0 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  cf_addr+4, maf_descr_zero,  Kerr)   
                 if rc0 == False:
-                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  22, \
+                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  27, \
                             message='Error 2 write to CF' )
                     return False      
                 rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  self.ht.c_free,  new_cf_block , Kerr )
                 if rc1 ==False:
-                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  23, \
+                    set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  28, \
                             message='Error write to CF' )
                     return False
-                new_cf_link =     struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block)
+                new_cf_link =  struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block)
 
                 self.ht.c_free += len_new_cf_block
                 """
                 if not self.ht.save_adt(Kerr):
-                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  24 , \
+                    set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  30 , \
                                     message='Error save HTD.' )
                     return False
                 """
             """
             if not self.ht.cage.put_pages ( self.ht.channels [ 'cf' ], Kerr):
-                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  25 , \
+                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  31 , \
                                 message='Error CF push modified page ' )
                 return False
             """
-            rc2 =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, new_cf_link , Kerr)   
+            rc2 =  self.ht.cage.write( self.ch, (num_row-1)*self.rowlen+offset, new_cf_link , Kerr)   
             if rc2 ==False:
-                set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  26, \
+                set_err_int (Kerr, Mod_name,  'u_link '+self.ht.ht_name+'-'+ str(self.maf_num),  32, \
                             message='Error write to MAF.' )
                 return False
             """
             if not self.ht.cage.put_pages ( self.ch, Kerr):
-                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  27 , \
+                set_err_int (Kerr, Mod_name,   'u_links '+self.ht.ht_name+'-'+ str(self.maf_num),  33 , \
                                 message='Error MAF push modified page ' )
                 return False
             """
@@ -1495,7 +1727,7 @@ class MAF():
     def r_utf8 (self, Kerr = [] , attr_num=0 , num_row =0 ):
 
         if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+            set_err_int (Kerr, Mod_name,  'r_utf8  '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
                     message='num_row parameter over the  number of MAF rows.' )
             return False
         if  not (self.ht.attrs [ attr_num ] ['type'][ : 3 ]  in ( 'utf', 'dat') ):
@@ -1504,21 +1736,18 @@ class MAF():
             return False
         offset , length = self.offsets [attr_num] 
 
-        print('\n *** CAGE READ channel=%d,  from=%d , length=%d  ***'% 
-            (self.ch,  ( num_row - 1 )*self.rowlen+offset, length )
-            )
+        #print('\n *** CAGE READ channel=%d,  from=%d , length=%d  ***'% 
+            #(self.ch,  ( num_row - 1 )*self.rowlen+offset, length )  )
 
         rc =  self.ht.cage.read( self.ch,  ( num_row - 1 )  *self.rowlen+offset, length , Kerr)
-
+        """
         if rc:
             print('\n *** maf_name=%s,  attr_num=%d , num_row=%d  ***\n%s'% 
-            (self.maf_name, attr_num, num_row, rc.decode( "utf-8", "ignore"))
-            )
+            (self.maf_name, attr_num, num_row, rc.decode( "utf-8", "ignore")) )
         else:
             print('\n *** maf_name=%s,  attr_num=%d , num_row=%d  ***\n!!!!!!!!!!NONE!!!!!!!!!!!!!!'% 
-            (self.maf_name, attr_num, num_row)
-            )
-
+            (self.maf_name, attr_num, num_row) )
+        """
         if rc == False:
             set_err_int (Kerr, Mod_name, 'r_utf8 '+self.ht.ht_name+'-'+ self.maf_name,  3 , \
                                 message='Error read from MAF. ' )
@@ -1539,7 +1768,7 @@ class MAF():
     def w_utf8 (self, Kerr = [] , attr_num=0, num_row =0, string = ''):
 
         if self.ht.mode in ('rs', 'rm' ):
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  6 , \
+            set_err_int (Kerr, Mod_name,  'w_utf8 '+self.ht.ht_name+'-'+ str(self.maf_num),  6 , \
                     message='Mode "%s" incompatible for elem modify - w_utf8 in MAF for HT "%s".'
                     % (self.ht.mode, self.ht.ht_name)
             )
@@ -1548,7 +1777,7 @@ class MAF():
         if string == None:
              string = ''
         if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'w_links '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+            set_err_int (Kerr, Mod_name,  'w_utf8 '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
                     message='num_row parameter over the  number of MAF rows.' )
             return False
         atr_type = self.ht.attrs [ attr_num ] ['type'] 
@@ -1645,13 +1874,21 @@ class MAF():
                     % (self.ht.mode, self.ht.ht_name)
             )
             return False
+        if attr_num not in self.ht.attrs:
+            set_err_int (Kerr, Mod_name,  'w_numbers '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+                    message='Wrong attribute number "%d" in MAF for HT "%s".'
+                    % ( attr_num, self.ht.ht_name)
+            )
+            return False
+        if num_row > self.rows:
+            set_err_int (Kerr, Mod_name,  'w_numbers '+self.ht.ht_name+'-'+ str(self.maf_num),  13 , \
+                    message='Parameter num_row "%d" over the number of MAF rows for HT "%s"' 
+                    % ( num_row, self.ht.ht_name)
+            )
+            return False
 
         if numbers== None:
             numbers= 0
-        if num_row > self.rows:
-            set_err_int (Kerr, Mod_name,  'w_numbers '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
-                    message='num_row parameter over the  number of MAF rows.' )
-            return False
 
         atr_type = self.ht.attrs [ attr_num ] ['type']
         offset , length = self.offsets [attr_num] 
@@ -1751,7 +1988,7 @@ class MAF():
 
             return True
         else:
-            set_err_int (Kerr, Mod_name,   'w_numbers '+self.ht.ht_name+'-'+ self.maf_name,  10 , \
+            set_err_int (Kerr, Mod_name,   'w_numbers '+self.ht.ht_name+'-'+ self.maf_name,  13 , \
                         message='Incorrect type of input data' )
             return False
 
@@ -1929,7 +2166,7 @@ class MAF():
     def w_str (self, Kerr = [] , attr_num=0, num_row =0,  string= '', rollback=False):
 
         if self.ht.mode in ('rs', 'rm' ):
-            set_err_int (Kerr, Mod_name,  'w_str '+self.ht.ht_name+'-'+ str(self.maf_num),  8 , \
+            set_err_int (Kerr, Mod_name,  'w_str '+self.ht.ht_name+'-'+ str(self.maf_num),  10, \
                     message='Mode "%s" incompatible for elem modify - w_str in MAF for HT "%s".'
                     % (self.ht.mode, self.ht.ht_name)
             )
@@ -2069,7 +2306,13 @@ class MAF():
 
 # -------------------------------------------------------------------------------------------
 
-    def r_file_descr (self, Kerr = [] , attr_num=0, num_row =0,  ): 
+    def r_file_descr (self, Kerr = [], attr_num=0, num_row =0,): 
+
+        # file_descr={'file_name':, 
+        #             'file_ext':, 
+        #             'content_type':, 
+        #             'file_length':
+        #             }
 
         if num_row > self.rows:
             set_err_int (Kerr, Mod_name,  'r_file_desc '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
@@ -2329,6 +2572,563 @@ class MAF():
         #name_ext=os.path.basename(path)
         #name = os.path.splitext(name_ext)[0]
         #extension = os.path.splitext(name_ext)[1][1:]
+
+# -------------------------------------------------------------------------------------------
+
+
+    def w_weights (self, Kerr = [] , attr_num=0, num_row=0, weights =set(), rollback=False):
+
+        if self.ht.mode in ('rs', 'rm' ): 
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+                    message='Mode "%s" incompatible for weights modify in MAF for HT "%s".'
+                    % (self.ht.mode, self.ht.ht_name)
+            )
+            return False
+
+        if num_row > self.rows:
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
+                    message='num_row parameter over the  number of MAF rows.' )
+            return False
+        if self.attr_type( attr_num ) != "*weight":
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  3 , \
+                    message='attr_num parameter not corresponds with field data.' )
+            return False
+
+        offset , length = self.offsets [attr_num] 
+        weights_list=[]
+        
+        if type(weights).__name__=='dict':
+            for key in weights:
+                weights_list.append( (key[0], key[1], weights[key]) )
+        elif type(weights).__name__=='tuple':
+            weights_list = list (weights)
+        elif type(weights).__name__=='list':
+            weights_list = weights.copy()
+        elif type(weights).__name__=='set':
+            weights_list = list (weights)
+        else:
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  3 , \
+                    message='weights parameter not correct.' )
+            return False
+
+        if  weights_list == []:
+            new_cf_weight = b'\xFF'* 16 # indicator of "null" set of weights 
+        else:
+            new_dim = 0
+            new_weight_block= b''
+
+            for a in range (0, len ( weights_list ) ):
+                if not ( weights_list [a][ 0 ]   in self.ht.mafs  and \
+                    self.ht.mafs [  weights_list [a][ 0 ] ]['name'][ : 8] != 'deleted:') :
+                    set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  5 , \
+                        message='weights contains link to not existed MAF no. = %d' %  weights_list [a][ 0 ] ) 
+                    return False
+                if   weights_list [a][ 1 ] < 0 or   weights_list [a][ 1 ] > self.ht.mafs [ weights_list [a][ 0 ]  ]['rows'] :
+                    set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  6 , \
+                        message='weights contains link to not existed row  %d  in MAF no. = %d' % 
+                                 ( weights_list [a][1], weights_list [a][ 0 ] )  )
+                    return False
+
+                new_dim += 1
+                try:
+                    new_weight_block +=  struct.pack('>Lif', weights_list [a][ 0 ],  weights_list [a][ 1 ],  weights_list [a][ 2 ]) 
+                except struct.error as err:
+                    set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  7 , \
+                        message='cf pack weights error = %s.'% err )
+                    return False      
+
+            len_new_cf_block = 16+ new_dim*Types_htms.types[ "*weight" ][1] + 8               #  new_dim*8
+            overwrite = False               # write block on new place
+
+            old_cf_weight =  self.ht.cage.read( self.ch, (num_row-1)*self.rowlen+offset, 16 , Kerr)   
+            if old_cf_weight == False:
+                set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ self.maf_name,  8 , \
+                            message='Error read CF block address from MAF. ' )
+                return False
+            if old_cf_weight != b'\xFF'*16:
+                old_cf_addr, len_old_cf_block =   struct.unpack( '>QQ', old_cf_weight )
+            else:
+                old_cf_addr = -1
+
+            if old_cf_addr != -1  and  not rollback:
+                if   len_new_cf_block <= len_old_cf_block :
+                    overwrite = True        # write block on old place (with overlap)
+            try:
+                descr_weights= struct.pack('>LLLL', new_dim,  self.maf_num, attr_num, num_row )
+            except struct.error as err:
+                set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  9 , \
+                    message='cf pack descriptor error = %s.'% err )
+                return False      
+
+            new_cf_block = descr_weights + new_weight_block + b'\xFF'*8  # end marker
+           
+            if overwrite:
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                          old_cf_addr,   
+                                          (new_cf_block + (len_old_cf_block - len_new_cf_block) * b'\xFF'  ), 
+                                          Kerr)   
+                if rc1 == False:
+                    set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  11, \
+                        message='Error 1 write CF.' )
+                    return False      
+                new_cf_weight =    struct.pack ('>QQ', old_cf_addr, len_new_cf_block )
+            else:
+                # null maf to old weights descriptor
+                if old_cf_addr != -1  :
+                    maf_descr_zero = struct.pack('>L', 0 )
+                    #pr('  W weight Zero Descr    maf %d -->0,    atr=%d,     row=%d ' % \
+                                    #(  self.maf_num, attr_num, num_row) )   
+                    rc0 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  old_cf_addr+4, maf_descr_zero,  Kerr)   
+                    if rc0 == False:
+                        set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+                            message='Error 2 write CF.' )
+                        return False      
+
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  self.ht.c_free,  new_cf_block , Kerr)   
+                if rc1 == False:
+                    set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  13 , \
+                        message='Error write CF.' )
+                    return False      
+                new_cf_weight =  struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block )
+
+                self.ht.c_free += len (new_cf_block)     
+                """
+                if not self.ht.save_adt(Kerr):
+                    set_err_int (Kerr, Mod_name,   'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  15 , \
+                                    message='Error save HTD.' )
+                    return False
+                """
+        """
+        if not self.ht.cage.put_pages ( self.ht.channels [ 'cf' ], Kerr):
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  16, \
+                        message='Error CF push modified pages.' )   
+            return False                        
+        """
+        rc2 =  self.ht.cage.write( self.ch,(num_row-1)*self.rowlen+offset, new_cf_weight , Kerr)   
+        if rc2 == False:
+            set_err_int (Kerr, Mod_name, 'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  18 , \
+                        message='Error write MAF.' )
+            return False
+        """    
+        if not self.ht.cage.put_pages ( self.ch, Kerr):
+            set_err_int (Kerr, Mod_name,  'w_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  19, \
+                        message='Error MAF push modified pages.' )
+            return False
+        """
+        self.updated = time.time()
+        self.ht.mafs [ self.maf_num]['updated']= self.updated
+        self.ht.updated =self.updated 
+
+        return True
+      
+
+# -------------------------------------------------------------------------------------------
+
+    def r_weights (self, Kerr = [] , attr_num=0 , num_row=0 ):
+
+        if num_row > self.rows:
+            set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+                    message='num_row parameter over the  number of MAF rows.' )
+            return False
+        if self.attr_type( attr_num ) != "*weight":
+            set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
+                    message='attr_num parameter not corresponds with field data.' )
+            return False
+
+        weights=()
+        offset , length = self.offsets [attr_num] 
+        cf_weight =  self.ht.cage.read( self.ch, (num_row - 1)*self.rowlen+offset, 16 , Kerr)   
+        if cf_weight == False:
+            set_err_int (Kerr, Mod_name,   'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  3, \
+                        message='Error read CF block address in MAF.' )
+            return False
+        elif cf_weight ==  b'\xFF'* 16:
+            return  weights
+
+        cf_addr, len_cf_block =   struct.unpack( '>QQ', cf_weight )
+        if len_cf_block==0:
+            self.ht.cage.write( self.ch, (num_row - 1)*self.rowlen+offset, b'\xFF'* 16, Kerr)
+            return  weights
+        
+        if len_cf_block < 16  or len_cf_block > self.ht.c_free  \
+           or  cf_addr > self.ht.c_free -16 or  cf_addr < 0 :
+            set_err_int (Kerr, Mod_name,   'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  4, \
+                        message='Information about CF block is corrupted in MAF. ' )
+            return False
+
+        cf_block =  self.ht.cage.read( self.ht.channels [ 'cf' ], cf_addr, len_cf_block , Kerr)
+        if cf_block == False:
+            set_err_int (Kerr, Mod_name,   'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  5, \
+                        message='Error read CF block.' )
+            return False  
+
+        old_dim, maf_num, natr, nrow = struct.unpack ('>LLLL', cf_block[ 0 : 16])
+
+        if old_dim == 0 or maf_num == 0:
+            cf_weight = b'\xFF'* 16 # indicator of "null" set of weights 
+            rc2 =  self.ht.cage.write( self.ch, (num_row-1)*self.rowlen+offset, cf_weight , Kerr) 
+            if rc2 == False:
+                set_err_int (Kerr, Mod_name,   'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  6, \
+                            message='Error write null CF block address in MAF.' )
+                return False 
+            return  weights
+        """
+        if  old_dim != ( len_cf_block  - 16 - 8 ) /12: # need to correct length,  # /8
+                        #  because update cf change dimension of weights array
+            new_len_cf_block = 16 + 8+ old_dim*12                                  # old_dim*8
+            new_cf_weight = struct.pack ('>QQ', cf_addr,  new_len_cf_block )
+            rc3 =  self.ht.cage.write( self.ch, (num_row-1)*self.rowlen+offset, new_cf_weight , Kerr)
+            if rc3 == False:
+                set_err_int (Kerr, Mod_name, 'r_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  7 , \
+                        message='Error write MAF.' )
+                return False      
+        """
+        if  maf_num !=  self.maf_num   or \
+            natr != attr_num or \
+            nrow != num_row:
+            set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  8 , \
+                        message='Data corruption in C file.' )
+            return False
+
+        lena = Types_htms.types[ "*weight" ][ 1 ]
+        for a in range(old_dim):
+            weight = struct.unpack('>Lif', cf_block [16+a*lena: 16+(a+1)*lena ] )    # cf_block [16+a*lena*2: 16+(a+1)*lena*2 ]
+            if weight[ 0 ] != 0:
+                if not ( weight[ 0 ]  in self.ht.mafs  and self.ht.mafs [ weight[ 0 ] ]['name'][ : 8] != 'deleted:') :
+                    set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  9 , \
+                        message='Data corruption in C file. weights contains link to not existed MAF no. = %d' % weight[ 0 ] ) 
+                    return False
+                elif  weight[ 1 ] < 0 or  weight[ 1 ] > self.ht.mafs [ weight[ 0 ] ]['rows'] :
+                    set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  10 , \
+                        message='Data corruption in C file. weights contains link to not existed row  %d  in MAF no. = %d' % 
+                                 (weight[1], weight[ 0 ] ) )
+                    return False
+
+                weights += (weight,)
+
+        # delete duplicates
+
+        # delete weights to deleted rows and mafs
+
+        return weights
+
+
+# -------------------------------------------------------------------------------------------
+
+    def u_weights (self, Kerr = [] , attr_num=0, num_row=0,  u_weight =(), rollback=False):     
+                    # u_weight = () - clear all element   
+
+                    # ?????????  u_weight =(nmaf, 0) - indicate weights to all maf's rows with weight=0.0     
+
+                    # u_weight =(-nmaf, *) - delete all weights to maf
+                    # u_weight =(nmaf, -num_row ) - delete one weight to maf , to  num_row
+                    # u_weight =(nmaf, num_row, weight) -  add  weight to maf - num_row, if not exist
+                                                           # if exist - update  weight value   ### added 
+        if self.ht.mode in ('rs', 'rm' ) :
+            set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  1 , \
+                    message='Mode "%s" incompatible for weights modify in MAF for HT "%s".'
+                    % (self.ht.mode, self.ht.ht_name)
+            )
+            return False
+
+        if num_row > self.rows:   # check errors in input data  
+            set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  2 , \
+                    message='num_row parameter over the  number of MAF rows.' )
+            return False
+        if self.attr_type( attr_num ) != "*weight":  # check errors in input data  
+            set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  3 , \
+                    message='attr_num parameter not corresponds with field data.' )
+            return False
+
+        offset , length = self.offsets [attr_num] 
+
+        #pr ( str (abs( u_weight[ 1 ] ) ) +'??'+ str (self.ht.mafs [ u_weight[ 0 ] ]['rows'] ) )
+
+        if  u_weight == ():  # write null and return True  
+            new_cf_weight = b'\xFF' *16
+            rc =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, new_cf_weight , Kerr)   
+            if rc == False:
+                set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  4 , \
+                                        message='Error write to MAF. ' )
+                return False
+
+            self.updated = time.time()
+            self.ht.mafs [ self.maf_num]['updated']= self.updated
+            self.ht.updated =self.updated 
+
+            return True
+
+        elif u_weight != (): # check errors in input data  
+            if not ( abs (u_weight[ 0 ] ) in self.ht.mafs  and \
+                self.ht.mafs [ abs (u_weight[ 0 ] ) ]['name'][ : 8] != 'deleted:') :
+                set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  6, \
+                        message='weight to not existed MAF no. = %d' % u_weight[ 0 ] ) 
+                return False            
+            elif  u_weight[ 1 ] !=0  and abs( u_weight[ 1 ] ) > self.ht.mafs [ u_weight[ 0 ] ]['rows'] :
+                set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  7 , \
+                        message='weight to not existed row  %d  in MAF no. = %d' % ( abs (u_weight[1] ), u_weight[ 0 ] ) )
+                return False
+
+        new_cf_weights=()
+
+        cf_weight =  self.ht.cage.read( self.ch, (num_row-1)*self.rowlen+offset, 16, Kerr)  
+        
+        if cf_weight == False:  # return False  
+            set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  8 , \
+                                message='Error read from MAF. ' )
+            return False
+
+        elif cf_weight == b'\xFF'*16:  # field was null -> create new set of weights  
+            if  u_weight[ 0 ]  <= 0 or u_weight [ 1 ] < 0:
+                set_warn_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  9 , \
+                                message='Address of the set ot the weights in MAF empty.' )
+                return True
+            rc = self.w_weights (Kerr, attr_num,  num_row , weights = (u_weight,) )
+            if rc == False:
+                set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  11 , \
+                                        message='Error in w_weights. ' )
+                return False
+            """
+            else:    # CHECK OPERATION
+                u_weight_read = self.r_weights (Kerr, attr_num,  num_row )
+                if not u_weight in u_weight_read:
+                    set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+                                    message='Error MAF weight update ' )
+                    return False
+            """
+            """
+            if not self.ht.cage.put_pages ( self.ch, Kerr):
+                set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  12 , \
+                                message='Error MAF push modified page ' )
+                return False
+            """
+            self.updated = time.time()
+            self.ht.mafs [ self.maf_num]['updated']= self.updated
+            self.ht.updated =self.updated 
+            return True
+
+        # else - # field was not null
+
+        cf_addr, len_cf_block =   struct.unpack( '>QQ', cf_weight )
+
+        cf_block =  self.ht.cage.read( self.ht.channels [ 'cf' ], cf_addr, len_cf_block , Kerr)
+
+        if cf_block == False:  # error read from CF   
+            set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  13 , \
+                                message='Error read from CF. ' )
+            return False  
+
+        old_dim, maf_num, natr, nrow = struct.unpack ('>LLLL', cf_block[ 0 : 16])
+
+
+        if old_dim == 0 or maf_num == 0:
+            if u_weight[ 0 ]  < 0 or u_weight [ 1 ] < 0 :  # error in input data              
+                set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  15 , \
+                                message='Set ot the weights in MAF empty.' )
+                zero_weight = b'\xFF'* 16 # indicator of "null" set of weights 
+                rc2 =  self.ht.cage.write( self.ch,  ( num_row - 1 )*self.rowlen+offset, zero_weight , Kerr) 
+                if rc2 == False:
+                    set_err_int (Kerr, Mod_name,    'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  16 , \
+                                message='Error write null CF block address in MAF.' )
+                return False 
+            else: # write weight from input paremeter u_weight  
+                rc = self.w_weights (Kerr, attr_num,   num_row , weights = (u_weight,) )
+                if rc == False:
+                    set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  17 , \
+                                            message='Error in w_weights. ' )
+                    return False
+                """
+                if not self.ht.cage.put_pages ( self.ch, Kerr):
+                    set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  20 , \
+                                    message='Error MAF push modified page ' )
+                    return False
+                """
+                self.updated = time.time()
+                self.ht.mafs [ self.maf_num]['updated']= self.updated
+                self.ht.updated =self.updated 
+                return True
+
+        if  maf_num != self.maf_num or \
+            natr    != attr_num or \
+            nrow    != num_row:
+            set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  22, \
+                        message='Data corruption in C file.' )
+            return False 
+
+        if  old_dim != ( len_cf_block - 16 - 16 ) /16: # need to correct length,       #  - 8 ) /8:
+                        #  because update cf change dimension of weights array
+            new_len_cf_block = 16 + 16 + old_dim*16 
+            new_cf_weight = struct.pack ('>QQ', cf_addr,  new_len_cf_block )
+            rc3 =  self.ht.cage.write( self.ch,   (num_row-1)*self.rowlen+offset, new_cf_weight , Kerr)
+            if rc3 == False:
+                set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  21 , \
+                        message='Error write MAF.' )
+                return False      
+
+        change = False
+        execute = False
+        new_cf_weights = b''
+                
+        if u_weight[ 0 ]< 0:
+            maf_to_delete = - u_weight[ 0 ]
+        else:
+            maf_to_delete = 0
+
+        lena = Types_htms.types[ "*weight" ][ 1 ]
+        for a in range(old_dim):
+            wght = struct.unpack('>Lif', cf_block [16+a*lena: 16+(a+1)*lena ] )     # 2
+
+            if wght [ 0 ] == 0: # found null weight - miss it
+                change =  True
+                continue
+            else:
+                if not ( wght[ 0 ]  in self.ht.mafs  and self.ht.mafs [ wght[ 0 ] ]['name'][ : 8] != 'deleted:') :
+                    set_err_int (Kerr, Mod_name,  'u_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  23, \
+                        message='Data corruption in C file. weights contains link to not existed MAF no. = %d' % wght[ 0 ] ) 
+                    return False
+                elif  wght[ 1 ] < 0 or  wght[ 1 ] > self.ht.mafs [ wght[ 0 ] ]['rows'] :
+                    set_err_int (Kerr, Mod_name,  'r_weights '+self.ht.ht_name+'-'+  str( self.maf_num ) ,  24, \
+                        message='Data corruption in C file. weights contains link to not existed row  %d  in MAF no. = %d' % (wght[1], wght[ 0 ] ) )
+                    return False
+                elif  wght [ 0 ] == maf_to_delete : # delete weight
+                    execute = True
+                    change =  True
+                    continue
+                elif  wght [ 0 ] != u_weight [ 0 ] : # not match - repeat weight
+                    new_cf_weights += cf_block [16+a*lena: 16+ (a+1)*lena ]        # 2
+                    continue
+                # match  -  wght [ 0 ] == u_weight [ 0 ]
+                elif  wght[ 1 ] ==  u_weight [ 1 ] :  #already exist - update !!!! weight
+                    execute = True
+                    #change =  True
+                    #new_cf_weights += cf_block [16+a*lena*3: 16+ (a+1)*lena*3 -4 ]+ \       # [16+a*lena*2: 16+ (a+1)*lena*2 ]
+                    #                 struct.pack( '>f', u_weight[2])                  # !!!
+                    kerr=[]
+                    rc5 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                               cf_addr + 16 + a*lena, 
+                                               struct.pack( ">Lif", wght[0], wght[1], u_weight[2]), 
+                                               kerr)
+                    if rc5 ==False:
+                        set_err_int (Kerr, Mod_name,  'u_weight '+self.ht.ht_name+'-'+ str(self.maf_num),  29, \
+                                message='Error 5 write to CF' )
+                        return False
+
+                    continue
+                elif u_weight [ 1 ] ==0  : # need to set row num to 0 - miss old weight
+                    change =  True
+                    continue
+                elif wght[ 1 ]== - u_weight [ 1 ]  : # need to delete this weight - miss it
+                    execute = True
+                    change =  True
+                    continue
+                else :    # need to add new weight - repeat old weight       
+                    new_cf_weights += cf_block [16+a*lena: 16+ (a+1)*lena ]        # 2
+                    continue
+       
+        if not execute and u_weight [ 1 ] >= 0 and maf_to_delete == 0 :
+            new_cf_weights += struct.pack( '>Lif', u_weight[0], u_weight[1], u_weight[2])    
+            change =  True
+
+        if change:
+
+            new_dim = int (len (new_cf_weights)/12 )                                    #  8
+
+            if new_dim == 0:
+                new_cf_weight = b'\xFF' *16
+                rc =  self.ht.cage.write( self.ch, (num_row -1)*self.rowlen+offset, new_cf_weight , Kerr)   
+                if rc == False:
+                    set_err_int (Kerr, Mod_name, 'u_weights '+self.ht.ht_name+'-'+ self.maf_name,  30 , \
+                                            message='Error write to MAF. ' )
+                    return False
+                """
+                if not self.ht.cage.put_pages ( self.ch, Kerr):
+                    set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  31 , \
+                                    message='Error MAF push modified page ' )
+                    return False
+                """
+                self.updated = time.time()
+                self.ht.mafs [ self.maf_num]['updated']= self.updated
+                self.ht.updated =self.updated 
+
+                return True
+
+            new_cf_descr = struct.pack ('>LLLL', new_dim, maf_num, natr, nrow )
+            new_cf_block = new_cf_descr + new_cf_weights +b'\xFF'*8
+            len_new_cf_block =  len (new_cf_block)
+
+            if new_dim <= old_dim and not rollback: # write block on old place (with overlap)
+                kerr=[]
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                           cf_addr, 
+                                           (new_cf_block +  (old_dim-new_dim) * b'\xFF' *12 ), 
+                                           kerr )
+                if rc1 ==False:
+                    set_err_int (Kerr, Mod_name,  'u_weight '+self.ht.ht_name+'-'+ str(self.maf_num),  32, \
+                            message='Error 1 write to CF' )
+                    return False
+                new_cf_weight =   struct.pack ('>QQ', cf_addr, len_new_cf_block)
+            else:   # write block on new place
+                # null to dim in old weights descriptor
+                maf_descr_zero = struct.pack('>L', 0 )
+
+                #pr('  U weight Zero Descr    maf %d -->0,    atr=%d,     row=%d ' % \
+                                  #  (  maf_num, natr, nrow) )   
+                kerr=[]
+                rc0 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                          cf_addr+4, 
+                                          maf_descr_zero,  
+                                          kerr)   
+                if rc0 == False:
+                    set_err_int (Kerr, Mod_name,  'u_weight '+self.ht.ht_name+'-'+ str(self.maf_num),  34, \
+                            message='Error 2 write to CF' )
+                    return False      
+
+                kerr=[]
+                rc1 =  self.ht.cage.write( self.ht.channels [ 'cf' ],  
+                                          self.ht.c_free,  
+                                          new_cf_block , 
+                                          kerr )
+                if rc1 ==False:
+                    set_err_int (Kerr, Mod_name,  'u_weight '+self.ht.ht_name+'-'+ str(self.maf_num),  35, \
+                            message='Error write to CF' )
+                    return False
+                new_cf_weight =  struct.pack ('>QQ',  self.ht.c_free,  len_new_cf_block)
+
+                self.ht.c_free += len_new_cf_block
+                """
+                if not self.ht.save_adt(Kerr):
+                    set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  36 , \
+                                    message='Error save HTD.' )
+                    return False
+                """
+            """
+            if not self.ht.cage.put_pages ( self.ht.channels [ 'cf' ], Kerr):
+                set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  38 , \
+                                message='Error CF push modified page ' )
+                return False
+            """
+            kerr=[]
+            rc2 =  self.ht.cage.write( self.ch,  
+                                      (num_row-1)*self.rowlen+offset, 
+                                      new_cf_weight , 
+                                      kerr)   
+            if rc2 ==False:
+                set_err_int (Kerr, Mod_name,  'u_weight '+self.ht.ht_name+'-'+ str(self.maf_num),  40, \
+                            message='Error write to MAF.' )
+                return False
+            """
+            if not self.ht.cage.put_pages ( self.ch, Kerr):
+                set_err_int (Kerr, Mod_name,   'u_weights '+self.ht.ht_name+'-'+ str(self.maf_num),  41 , \
+                                message='Error MAF push modified page ' )
+                return False
+            """
+        self.updated = time.time()
+        self.ht.mafs [ self.maf_num]['updated']= self.updated
+        self.ht.updated =self.updated 
+
+        return True
+
+# -------------------------------------------------------------------------------------------
 
 
 
