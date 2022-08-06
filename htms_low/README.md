@@ -7,16 +7,16 @@
   * CRUDE (create, read, update and delete) operations at the physical level with attributes, tables, with rows in tables, with data and links in the fields;
   * operations with entire HT (as sets of the files on servers): renaming, copying, compressing, removing. 
 ##  Structure
-  PyPI package `htms-low-api` includes modules:
+  Package `htms-low-api` includes modules:
 -    `data_types.py` - contains class `Types_htms` describing all internal (embedded) HTMS data types;
 -    `funcs.py` - contains system function `match` for searching (filtering) table rows with accordance of match patterns and service finctions `links_dump` and `ht_dump` for degugging printing;
 -    `ht.py` - contains class `HT`;
 -    `maf.py` - contains class `MAF`;
 -    `htms_par_low.py` - contains main system parameters and options for tuning `Cage` class objects, settings for low level debugging,  and class `HTMS_low_Err` for error processing, derived class from `Exception` system class. 
 ##  HT files structure
-### &nbsp;
+###
 The HT database OS files includes:
-  * four system files, which we will call the files **htd**, **af**, **bf** and **cf** ; and
+  * four system files, which we will call the files **htd**, **af**, **bf** and **cf**;
   * a set of files for tables (one file - one table), which we will call the **multi-attribute file - MAF**.
 
 The first characters in the names of all files are the same - this is the symbolic name of the HT (database). The names of system files and the extensions of their file name are the same (for example, in the base database, the htd file will be named base.htd).
@@ -63,14 +63,21 @@ DBMS. HTMS saves files as areas in the bf file inside the HT itself and therefor
 
 ### **cf** file
 
-A shared storage for links. Each RTA value is stored in cf in a structure that contains a "descriptor of the links block" and the "links block" itself. A links block is a set of pairs `(table number, row number)`. 
+A shared storage for **links** and **weights** (numbered links).
+
+Reference type attributes (RTA) - fields with values that are interpreted as addresses of the rows in tables. In HTMS there are two kinds of RTA: simple links and numbered or "weighted" links. Simple link is a physical row address in HT. Numbered link - is a simple link plus weight (real number). For simplicity, the numbered links called "weights".
+
+RTA values can be not only atomic, but also sets. Each RTA value is stored in cf in a structure that contains a "descriptor of the links(weights) block" and the "links (weights) block" itself. 
+
+A links block is a set of pairs `(table number, row number)`. 
+A weights block is a set of triples `(table number, row number, real number)`. 
 The descriptor consists of four numbers:
-  1. `links block dimension`, i.e. quantity of the links; 
+  1. `links (weights) block dimension`, i.e. quantity of the links; 
   2. `MAF number`, to which the value of RTA belongs; 
   3. `identifier` (number) of the attribute in the HT; 
   4. `row number` in which the RTA value is located. 
 
-All links blocks in the cf file are separated using a unique combination of bytes, so it is possible to independently scan the cf file to systematically search and edit the necessary links.
+All links and weights blocks in the cf file are separated using a unique combination of bytes, so it is possible to independently scan the cf file to systematically search and edit the necessary links and weights.
 
 ### **multi-attribute file (MAF)**
 
@@ -102,6 +109,7 @@ Physical row numbers can obviously change when you delete old or insert (not at 
 `time` |  `time.time()` UTC as a float  | 8 | 8 | 0.0 |  
 `datetime` |  date and time in user format - UTF-8 string (without BOM) - up to 25 characters | 50 | 50 | b'\xFF'*50 |   
 `*link` |  offset and length of the "link's block" in the cf file  | 16 | 8 | (-1,-1) |   
+`*weight` |  offset and length of the "weight's block" in the cf file  | 16 | 12 | (-1,-1, 0.0) |   
 `*byte` |  an array of bytes of variable length (from 0 to 9223372036854775807) | 16 | 1 | b'\x00' |    
 `*utf` |  UTF-8 string (without BOM) | 16 | 2 | b'\xFF' |    
 `*int4` |  array of integers of variable length | 16 | 4 | 2147483647(*) |    
@@ -118,22 +126,24 @@ Notes :
     * (**) maximum possible long integer (in 8 bytes) `b \x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF'`. In HTMS, it is accepted as a sign of an undefined value for long integer (None);
     * (***) sign of indefinite value (None) for a float in 4 bytes `b'\x7f\xc0\x00\x00'`; 
     * (****) sign of indefinite value (None) for a double float in 8 bytes `b'\x7f\xf8\x00\x00\x00\x00\x00\x00'` 
-4. For the remaining types, the attribute value is considered **undefined** if the address `(data array, link block, file body)` is `b'\xFF'*16`. If the address contains an array length of 0, then the array is considered **defined and empty** (byte and character strings of zero length, empty tuple of an array of numbers, file of zero length) 
+4. For the remaining types, the attribute value is considered **undefined** if the address `(data array, link block, weight block or file body)` is `b'\xFF'*16`. If the address contains an array length of 0, then the array is considered **defined and empty** (byte and character strings of zero length, empty tuple of an array of numbers, file of zero length) 
 5. If it is critical to have a database logic with the ability to distinguish between undefined and zero values, then instead of types `byte1`, `byte4`, `byte8` must use `*byte`, and instead of `utf50`, `utf100`, `datetime` - `*utf`. 
 #### &nbsp;
 ## Main classes of HTMS low level API
 #### &nbsp;
 ## Class **`HT`**
-### `(server_ip="", ht_root="", ht_name="", cage_name="", ext={}, new=False, jwtoken="", zmq_context=False, from_subclass=False, mode='wm')`
+### `(server_ip="", ht_root="", ht_name="", cage_name="", ext={}, new=False, jwtoken="", zmq_context=False, from_subclass=False, mode='wm', local_root="")`
 #### &nbsp;
 This is the first base class for creating HTs and working with them. When initializing each object of the HT class using the method weakref.ref(self) creates a weak link to it to be able to look for all open HTs in the RAM. The
 class can be used at the physical layer of HTMS.
 ### Required parameters
-- `server_ip` ( _str_ ) - IP address (or DNS) of the file server with the HT;  
-- `ht_root` ( _str_ ) - the path to HT files on the file server;
+- one of two alternatives (see https://github.com/Arselon/Cage/blob/master/README.md):
+  * `server_ip` ( _dict_ ) - a dictionary with the addresses of the Cage servers used, where the _key_ is the _conditional name_ of the server (server name used in program code of the application), and the _value_ is a string with _real server address: `ip address:port`_ or _` DNS:port `_. Matching names and real addresses is temporary, it can be changed (by default `{"default_server_and_main_port": DEFAULT_SERVER_PORT}`); 
+  * `local_root` ( _str_ ) - full path (URL) to the folder with the database files on the local computer. A non-empty valid value for this parameter enables the fileserver **emulation mode** and invalidates the parameters `server_ip`, `zmq_context` and `wait`; 
+- `ht_root` ( _str_ ) - addition subpath to HT files (on the file server or local computer);
 - `ht_name` ( _str_ ) - the symbolic name of the HT (used to identify files on servers); 
 - `jwtoken` ( _object_ ) - JSON Web Token (see https://pyjwt.readthedocs.io/en/latest/). 
-It is used in the file servers to identify client applications. It is passed to the Cage remote file subsystem, where it performs an authentication function for security during communication, and also contains information about access rights. It is provided by the admin of the file server.
+It is used in the file servers to identify client applications. It is passed to the Cage remote file subsystem, where it performs an authentication function for security during communication, and also contains information about access rights. It is provided by the admin of the file server. For more details, see the technical documentation for the Cage system; 
 ### Additional parameters
 - `mode` ( _str_ ) - HT files access mode 
   * "rm" - readonly with monopoly; 
@@ -151,7 +161,7 @@ It is used in the file servers to identify client applications. It is passed to 
   * _False_ \- (by default);  
 - `zmq_context` ( _bool_ or _object_ ) - (by default _False_) Python bindings for ZeroMQ (see https://pyzmq.readthedocs.io/en/latest/api/zmq.html,  which means the ZeroMQ context will be created in the Cage object itself). Used to optimize the system, this parameter can be left _False_. 
 ### Attributes 
-The main data structure with HT attributes (`a_free`, `b_free`, `c_free`, `attrs`, `mafs`, `models`) is its descriptor (see above) except _dictionary_ `relations`. During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
+The main data structure with HT class attributes (`a_free`, `b_free`, `c_free`, `attrs`, `mafs`, `models`, `relations`) is **HT descriptor** (see above). During operation, HTMS maintains compliance between files and a descriptor so that in case of an error dont lose changes.
 
 Attributes, which used only in the instances and not saved in files:
 
@@ -195,14 +205,7 @@ Existing HTMS Implementation does not support the removal of the HT attribute at
   * `integer` - internal attribute id number if `fun=info` and `attr_name`!=`""`; 
   * `str` - attribute name if `fun=info` and `attr_num_p`!=`0`; 
 #### &nbsp;
-### **`update_attrs`** 
-#### `(add_attrs = {})`
-Serves only to add new attributes into the database. 
-#### R e c e i v e s
-- `add_attrs`  - _dictionary_, mapping the names of the attribute being added with its data type 
-#### R e t u r n s
-  * `0` \- if `add_attrs` parameter is an empty _dictionary_; 
-  * `integer` \- the number of added attributes (may be less than `len(add_attrs)`, if in _dictionary_ _keys_ there is the names, already used for HT attributes.
+### **`update_attrs`** - deprecated from version 3.
 #### &nbsp;
 ### **`get_maf_num`** 
 #### `(maf_name = "")`
@@ -222,33 +225,40 @@ Returns the HT unique attribute number and its data type by its conditional name
   * `()` \- if in all HT attribute names there is no `attr_name`  
   * (`integer`, `str`) \- the tuple with HT attribute internal number and HTMS data type.
 ### &nbsp;
-### **"External" functions** (not classes methods) in package `htms-low-api` that apply only to closed HTs
+### **"External" functions** (not classes methods) 
 #### &nbsp;
-All functions needs use temporary Cage object, because HT must be closed (i.e there is no HT instance in RAM)
+### **`get_maf`** 
+#### `(ht_name, n_maf)`
+The function searches for MAF class instance in RAM by unique MAF file number and unique name of the hypertable (database). 
+#### R e t u r n s
+  * `maf_name` \- MAF name or `""` if not found; 
+  * `rows` \- number of rows in MAF file;
+#### &nbsp;
+Functions `rename_ht`, `delete_ht`, `deepcopy_ht`, `compress_ht` applicable only to closed HTs.
 #### &nbsp;
 ### **`rename_ht`** 
-#### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", jwt_temp_cage="",cage_name= "", zmq_context =False)`
+#### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", jwt_temp_cage="",cage_name= "", zmq_context =False, local_root="")`
 Rename HT (rename database files and internal descriptors). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
 ### **`delete_ht`** 
-#### `(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", cage_name= "", zmq_context =False)`
+#### `(Kerr=[], server_ip="", ht_name="", ht_root="", jwt_temp_cage="", cage_name= "", zmq_context =False, local_root="")`
 Remove HT (delete all database files). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
 ### **`deepcopy_ht`** 
-#### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", new_ht_root ='', jwt_cage="",cage_name= "",zmq_context =False)`
+#### `(Kerr=[], server_ip="", ht_name="", ht_root="", new_ht_name="", new_ht_root ='', jwt_cage="",cage_name= "",zmq_context =False, local_root="")`
 Copy HT (database files) with full creating all attributes, tables and descriptors, that ensures the creation of a new internal numbering of attributes and tables in the copy of old HT and the absence of fragmentation in shared common files (`af`, `bf` and `cf`). 
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error;
 #### &nbsp;
 ### **`compress_ht`** 
-#### `(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage="",cage_name="", zmq_context =False)`
+#### `(Kerr=[], server = '', ht_name='', ht_root = '', jwt_temp_cage="",cage_name="", zmq_context =False, local_root="")`
 Makes deepcopy HT (database files) to the new HT, then delete old HT files, and restores all the names of the old table to the new one. 
 #### R e t u r n s
   * `True` \- success; 
@@ -344,11 +354,11 @@ Operations with rows of the MAF.
 #### &nbsp;
 ### **`w_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0, links=set(), rollback=False)`
-Record (write, update) the value in the reference type attribute (RTA field). Links argument is a set of the pairs - tuples (`MAF number`, `row number`) 
+Record (write, update) the value in RTA field (`*link` data type). 
 #### R e c e i v e s
 - `attr_num` \- HT reference type attribute id number; 
 - `num_row` \ - MAF row number (if `0` - indicate link to whole maf);
-- `links` - The set of pairs (MAF number, row number). If `set()` that is no links (null).
+- `links` - The set of the pairs - tuples (`MAF number`, `row number`).
 - `rollback` \: 
   * `False` \- (by default) allows writing a new block of references to the place of the previous one in the file `cf` (if it was and if the length of the new block is no longer than the length of the old one); 
   * `True` \- prohibits writing a new block of references to the place of the previous one in the file `cf`.
@@ -358,25 +368,64 @@ Record (write, update) the value in the reference type attribute (RTA field). Li
 #### &nbsp;
 ### **`r_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0)`
-Read the value of the reference type attribute (RTA field). 
+Read the value of the RTA field (`*link` data type). 
 #### R e c e i v e s
 - `attr_num` \- HT reference type attribute id number; 
 - `num_row` \ - MAF row number (greater `0`);
 #### R e t u r n s
-  * `True` \- success; 
+  * `tuple` of `tuples` (`MAF number`, `row number`) \- success; 
   * `False` \- error.
 #### &nbsp;
 ### **`u_links`** 
 #### `(Kerr=[], attr_num=0, num_row=0, u_link =(), rollback=False)`
-Change the value of the reference type attribute (RTA field). 
+Change the value of RTA field (`*link` data type). 
 #### R e c e i v e s
 - `attr_num` \- HT reference type attribute id number; 
 - `num_row` \ - MAF row number (greater `0`);
 - `u_link` \: 
   * `()` - reset (clear) the field value; 
-  * `(-nmaf, *)` - remove from the field value all links to MAF with id number `nmaf`; 
+  * `(-nmaf, *)` - remove from the field value all links to MAF with id number `nmaf`. * - means any value (it is ignored); 
   * `(nmaf, -num_row)` - remove the link to the `num_row` row in the MAF `nmaf`; 
   * `(nmaf, num_row)` - add a link to the `num_row` row in the MAF `nmaf`, if it does not exist.
+#### R e t u r n s
+  * `True` \- success; 
+  * `False` \- error.
+#### &nbsp;
+### **`w_weights`** 
+#### `(Kerr=[], attr_num=0, num_row=0, weights=set(), rollback=False)`
+Record (write, update) the value in RTA field (`*weight` data type). 
+#### R e c e i v e s
+- `attr_num` \- HT reference type attribute id number; 
+- `num_row` \ - MAF row number (if `0` - indicate link to whole maf);
+- `weights` - The set of the triples - tuples (`MAF number`, `row number`, `weight (real number)`).
+- `rollback` \: 
+  * `False` \- (by default) allows writing a new block of references to the place of the previous one in the file `cf` (if it was and if the length of the new block is no longer than the length of the old one); 
+  * `True` \- prohibits writing a new block of references to the place of the previous one in the file `cf`.
+#### R e t u r n s
+  * `True` \- success; 
+  * `False` \- error.
+#### &nbsp;
+### **`r_weights`** 
+#### `(Kerr=[], attr_num=0, num_row=0)`
+Read the value of the RTA field (`*weight` data type). 
+#### R e c e i v e s
+- `attr_num` \- HT reference type attribute id number; 
+- `num_row` \ - MAF row number (greater `0`);
+#### R e t u r n s
+  * `tuple` of `tuples` (`MAF number`, `row number`,`weight (real number)`) \- success; 
+  * `False` \- error.
+#### &nbsp;
+### **`u_weights`** 
+#### `(Kerr=[], attr_num=0, num_row=0, u_weight =(), rollback=False)`
+Change the value of RTA field (`*weight` data type). 
+#### R e c e i v e s
+- `attr_num` \- HT reference type attribute id number; 
+- `num_row` \ - MAF row number (greater `0`);
+- `u_weight` \: 
+  * `()` - reset (clear) the field value; 
+  * `(-nmaf, *)` - remove from the field value all weights to MAF with id number `nmaf`. * - means any value (it is ignored); 
+  * `(nmaf, -num_row)` - remove the weight to the `num_row` row in the MAF `nmaf`; 
+  * `(nmaf, num_row, weight)` - add weight to the `num_row` row in the MAF `nmaf`, if it does not exist.
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
@@ -514,23 +563,12 @@ Return the data type by HT attribute id number
 #### R e t u r n s
   * `str` \- HT data type; 
 ### &nbsp;
-### **"External" function**
-#### &nbsp;
-### **`get_maf`** 
-#### `(ht_name, n_maf)`
-Get info about MAF. HT must be opened. 
-#### R e c e i v e s 
-  * `ht_name` \- HT name; 
-  * `n_maf` \- internal MAF id number;
-#### R e t u r n s
-  * `maf_name` \- MAF name; 
-  * `rows` \- rows count;
-### &nbsp;
+
 ____________________
 
-#### Copyright 2021 [Arslan S. Aliev](http://www.arslan-aliev.com)
+#### _Copyright 2019-2022 [Arslan S. Aliev](http://www.arslan-aliev.com)_
 
-##### Software licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+_Software licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at [www.apache.org](http://www.apache.org/licenses/LICENSE-2.0). Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License._    
 
-#####  htms_low API v.2.3.1, readme.md red. 30.08.2021
+#####  htms_low API v.3.1.0, readme.md red. 06.08.2022
 
