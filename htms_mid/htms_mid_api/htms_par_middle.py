@@ -1,8 +1,9 @@
-# HTMS middle level  v. 2.3 (Cage class v. 2.9)
-# © A.S.Aliev, 2018-2021
+# HTMS middle level  v. 3.1.0 (Cage class v. 3.1.0)
+# © A.S.Aliev, 2018-2022
 
-DEBUG_DELETE_ROW_1 = False
+DEBUG_DELETE_ROW_1 =   False
 DEBUG_DELETE_FIELD_1 = False
+
 
 #----------------------------------------------
 
