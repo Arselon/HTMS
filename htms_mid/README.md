@@ -21,8 +21,8 @@
 The `HT_db` derives from `HT` class (HTMS low level) and inherits all of its attributes and methods. As well as `HT` it is used to create a specific object to model a specific database and is necessary when creating and using instances of the classes `Table`, `Links_array` and `Links_tree`.
 ### Required parameters
 - one of two alternatives (see https://github.com/Arselon/Cage/blob/master/README.md):
-  * `server_ip` ( _dict_ ) - a dictionary with the addresses of the Cage servers used, where the _key_ is the _conditional name_ of the server (server name used in program code of the application), and the _value_ is a string with _real server address: `ip address:port`_ or _` DNS:port `_. Matching names and real addresses is temporary, it can be changed (by default `{"default_server_and_main_port": DEFAULT_SERVER_PORT}`); 
-  * `local_root` ( _str_ ) - full path (URL) to the folder with the database files on the local computer. A non-empty valid value for this parameter enables the fileserver **emulation mode** and invalidates the parameters `server_ip`, `zmq_context` and `wait`;  
+  * `server` ( _dict_ ) - a dictionary with the addresses of the Cage servers used, where the _key_ is the _conditional name_ of the server (server name used in program code of the application), and the _value_ is a string with _real server address: `ip address:port`_ or _` DNS:port `_. Matching names and real addresses is temporary, it can be changed (by default `{"default_server_and_main_port": DEFAULT_SERVER_PORT}`); 
+  * `local_root` ( _str_ ) - full path (URL) to the folder with the database files on the local computer. A non-empty valid value for this parameter enables the fileserver **emulation mode** and invalidates the parameters `server`, `zmq_context` and `jwtoken`;  
 - `db_root` ( _str_ ) - addition subpath to HT files (on the file server or local computer);
 - `db_name` ( _str_ ) - the symbolic name of the HT (used to identify files on servers); 
 - `jwtoken` ( _object_ ) - JSON Web Token (see https://pyjwt.readthedocs.io/en/latest/). 
