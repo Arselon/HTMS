@@ -1,7 +1,7 @@
 
 # The middle level of the HTMS
 ### &nbsp;
-##  Includes classes: **HTdb** - inhered class from HT class (from low level), **Table** - inhered class from MAF class (from low level), **Links_array** - "service" class for set of the links in RAM, **Links_tree** - class for creating and managing objects describing graphs of the search waves.
+##  Includes classes: **HTdb** - inhered class from HT class (from low level), **Table** - inhered class from MAF class (from low level), **Links_array** - "service" class for set of the links (simple and numbered) in RAM, **Links_tree** and **Weights_tree** - classes for creating and managing objects describing graphs of the search waves.
 ### &nbsp;
 ### Tags: _HTMS, search wave, mid-level api_
 ### &nbsp;
@@ -11,17 +11,19 @@
   * operations with special link objects;
   * forming the search waves. 
 ##  Structure
-  PyPI package `htms-mid-api` includes modules:
--    `htdb.py` - contains classes `HT_db`, `Table`, `Links_array` and `Links_tree`;
+  Package includes modules:
+-    `htdb.py` - contains classes `HT_db`, `Table`, `Links_array`, `Links_tree` and ` Weights_tree`;
 -    `htms_par_middle.py` - settings for middle level debugging,  and class `HTMS_Mid_Err` for error processing, derived class from `Exception` system class. 
 #### &nbsp;
 ## Class **`HT_db(HT)`**
-### `(server = '', db_name='', db_root = '', cage_name='', new = False, jwtoken='', zmq_context = False, from_subclass=False, mode='wm')`
+### `(server = '', db_name='', db_root = '', cage_name='', new = False, jwtoken='', zmq_context = False, from_subclass=False, mode='wm', local_root='')`
 #### &nbsp;
 The `HT_db` derives from `HT` class (HTMS low level) and inherits all of its attributes and methods. As well as `HT` it is used to create a specific object to model a specific database and is necessary when creating and using instances of the classes `Table`, `Links_array` and `Links_tree`.
 ### Required parameters
-- `server` ( _str_ ) - IP address (or DNS) of the file server with the HT;  
-- `db_root` ( _str_ ) - the path to HT files on the file server;
+- one of two alternatives (see https://github.com/Arselon/Cage/blob/master/README.md):
+  * `server_ip` ( _dict_ ) - a dictionary with the addresses of the Cage servers used, where the _key_ is the _conditional name_ of the server (server name used in program code of the application), and the _value_ is a string with _real server address: `ip address:port`_ or _` DNS:port `_. Matching names and real addresses is temporary, it can be changed (by default `{"default_server_and_main_port": DEFAULT_SERVER_PORT}`); 
+  * `local_root` ( _str_ ) - full path (URL) to the folder with the database files on the local computer. A non-empty valid value for this parameter enables the fileserver **emulation mode** and invalidates the parameters `server_ip`, `zmq_context` and `wait`;  
+- `db_root` ( _str_ ) - addition subpath to HT files (on the file server or local computer);
 - `db_name` ( _str_ ) - the symbolic name of the HT (used to identify files on servers); 
 - `jwtoken` ( _object_ ) - JSON Web Token (see https://pyjwt.readthedocs.io/en/latest/). 
 It is used in the file servers to identify client applications. It is passed to the Cage remote file subsystem, where it performs an authentication function for security during communication, and also contains information about access rights. It is provided by the admin of the file server.
@@ -41,9 +43,23 @@ It is used in the file servers to identify client applications. It is passed to 
   * _False_ \- (by default);  
 - `zmq_context` ( _bool_ or _object_ ) - (by default _False_) Python bindings for ZeroMQ (see https://pyzmq.readthedocs.io/en/latest/api/zmq.html,  which means the ZeroMQ context will be created in the Cage object itself). Used to optimize the system, this parameter can be left _False_. 
 ### Attributes
+#### &nbsp;
 `HTdb`attributes inherited from the class `HT` (low level HTMS). 
 ### &nbsp;
 ### Main methods
+#### &nbsp;
+### **`getinstances`** 
+#### `()`
+Class instances generator.
+#### Y i e l d s
+- HT_db instance object
+#### &nbsp;
+### **`close`** 
+#### `(Kerr=[])`
+Close - closes all database files, destroys objects class `Cage` and destroys the "weak" link to the `HT_db` object. Upon destruction a weak link also destroys the instance itself.
+#### R e t u r n s
+  * `True` \- success; 
+  * `False` \- error. 
 ### &nbsp;
 ### `relation` 
 #### `(dic)` 
@@ -67,9 +83,9 @@ This is a utility class for working with array ot the objects containing dynamic
 
 Class is based on the concept of "dynamic link" (you can use the concept of "reactive link" as an equivalent). The array of dynamic links is constantly checked by HTMS when deleting any row or inserting a new one not at the end of the table, and, if necessary, the corresponding row numbers are adjusted in this array - in the same way as the row numbers in the RTA values ​​in all tables (MAFs) are adjusted.
 ### Required parameters
-- `links` ( _object_ ) - a tuple of references (pairs `(MAF id number, row number)`) for the initial object definition. 
+- `links` - a tuple of references ( pairs `(MAF id number, row number)` and triples `(MAF id number, row number, real number)`) for the initial object definition. 
 ### Attributes
-- `dyna_link` - a _dictionary_ with "dynamic" links, where the _key_ is the ordinal number of the link (its index), the _value_ is the link - the pair `(MAF id number, row number)`. This _dictionary_ (indexed array of links) can only be accessed through the methods of this class;
+- `dyna_link` - a _dictionary_ with "dynamic" links, where the _key_ is the ordinal number of the link (its index), the _value_ is the link - the pair `(MAF id number, row number)` or the triple `(MAF id number, row number, real number)`. This _dictionary_ (indexed array of links) can only be accessed through the methods of this class;
 - `_instances` - a set of "weak" references on the class instances (see [Python weak references](https://docs.python.org/3/library/weakref.html)).
 ### &nbsp;
 ### Main methods
@@ -78,7 +94,7 @@ Class is based on the concept of "dynamic link" (you can use the concept of "rea
 #### `()` 
 Generator of a set of references from a class instance.
 #### Y i e l d s
-- the pair `(MAF id number, row number)`
+- the pair `(MAF id number, row number)` or the triple `(MAF id number, row number, real number)`
 ### &nbsp;
 ### `get_dyna_link` 
 #### `(ind)` 
@@ -86,13 +102,13 @@ Returns a link by index (empty tuple () if not found)
 #### R e c e i v e s
 - `ind` - the index of the link in links array
 #### R e t u r n s
-- the pair `(MAF id number, row number)`
+- the pair `(MAF id number, row number)` or the triple `(MAF id number, row number, real number)`
 ### &nbsp;
 ### **`get_dyna_index`** 
 #### `(link)` 
 Returns a index by link 
 #### R e c e i v e s
-- `link` - `(MAF id number, row number)`
+- `link` - `(MAF id number, row number)` or the triple `(MAF id number, row number, real number)` 
 #### R e t u r n s
 - `index`:
   * _int_ - the index of link in Links_array instance;
@@ -102,7 +118,7 @@ Returns a index by link
 #### `(link)` 
 Add new link to array 
 #### R e c e i v e s
-- `link` - `(MAF id number, row number)`
+- `link` - `(MAF id number, row number)` or the triple `(MAF id number, row number, real number)`
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
@@ -111,8 +127,9 @@ Add new link to array
 #### `(link, new)` 
 Update the link in the array with the same index id, but raises an exception if the operation fails
 #### R e c e i v e s
-- `link` - `(MAF id number, row number)` - old array item;
-- `new` -  `(MAF id number, row number)` - new item;
+- one of two alternatives:
+  * `link` - `(MAF id number, row number)` - old array item;&nbsp;&nbsp; `new` -  `(MAF id number, row number)` - new item;
+  * `link` - `(MAF id number, row number, real number)` - old array item;&nbsp;&nbsp;`new` -  `(MAF id number, row number, real number)` - new item;
 #### R a i s e
   * `HTMS_Low_Err` - "205 HTMS_Mid_Err     Link update impossible".
 ### &nbsp;
@@ -120,7 +137,7 @@ Update the link in the array with the same index id, but raises an exception if 
 #### `(link)` 
 Remove link from array logically, if it is, by replacing it with a tuple (0,0).  
 #### R e c e i v e s
-- `link` - `(MAF id number, row number)`
+- `link` - `(MAF id number, row number)`or `(MAF id number, row number, real number)`
 ### &nbsp;
 ### **`get_dyna_rows`** 
 #### `(nmaf)` 
@@ -190,6 +207,11 @@ The sets `nodes_discovered`and `nodes_parents` are common for all direct waves i
 ### **`tree_DOT`** 
 #### `()` 
 Utility for obtaining a graph from a wave in the DOT language format. Each call to this method updates the values of the `DOT_vertexes` and `DOT_edges` attributes of the `Links_tree` instance. The application program can use information from the wave object in the internal HTMS format - an indexed array of nodes of the `Links_tree` graph - `nodes_links` and a _dictionary_ of the edges - `links_tree`.
+### &nbsp;
+## Class **`Weights_tree`**
+### `(ht_name, root_link, tree_name='')`
+#### &nbsp;
+The description of this class and its methods are similar to the class **Links_tree**, only the nodes of the graph are triples `(MAF id number, row number, weight)`, and the elements of the set `DOT_edges` - tuples `(name of the parent vertex, name of the child vertex, the RTA id number from which the edge begins, weight)`.
 ### &nbsp;
 ## Class **`Table(MAF)`**
 ### `(ht_root ='', ht_name ='', t_name='', t_nmaf=0)`
@@ -264,7 +286,7 @@ Since in the process of physically deleting a row using the `row` method, the ph
 ### &nbsp;
 ### **`update_links`** 
 #### `(row_num =0, attr_name='', add_links={}, delete_links= {})`
-Universal method for changing the RTA field values of a table row.
+Universal method for changing the RTA field (data type `*link`) values of a table row.
 #### R e c e i v e s
 - `row_num` - row number;
 - `attr_name` - HT attribute (RTA) name;
@@ -280,18 +302,33 @@ The elements of `add_links` and `delete_links` _dictionaries_ are specified as f
     * for delete_links:
       * "all" - remove all references to rows in target  table;
       * `set()` - do not change references to rows in target table.
+
 For `delete_links`, instead of a _dictionary_, you can specify `delete_links="all"`, which will reset the entire value of the RTA field to null.
 #### R a i s e s
   * `HTMS_Mid_Err`- error.
 #### R e t u r n s
   * `True` \- success; 
 ### &nbsp;
+### **`single_link`** 
+#### `(row_num =0, attr_name='',  to_table ='', to_row=0)`
+Updating one link value. 
+#### R e c e i v e s
+- `row_num` - Can take three kinds of  values: 
+  * row number - to add a new link in specified table;
+  * -row number - to delete link to specified row in specified table; 
+  * 0 - to delete all links to rows  in specified table; 
+- `attr_name` - HT attribute (RTA) name  (data type `*link`) ;
+- `to_table`:
+  * _str_ - table name, or 
+  * _object_ - table instance;
+- `to_rows` - set of the rows numbers.  
+### &nbsp;
 ### **`multi_link`** 
 #### `(row_num =0, attr_name='',  to_table ='', to_rows=())`
 Most convenient method for updating links. Replaces the use of the `update_links` method in the most common cases.
 #### R e c e i v e s
 - `row_num` - row number;
-- `attr_name` - HT attribute (RTA) name;
+- `attr_name` - HT attribute (RTA) name  (data type `*link`) ;
 - `to_table`:
   * _str_ - table name, or 
   * _object_ - table instance;
@@ -299,8 +336,60 @@ Most convenient method for updating links. Replaces the use of the `update_links
 
 If `to_rows=()` then method deletes all links from the field to table `to_table`.
 ### &nbsp;
-### **`copy`** 
-#### `(new_table_name='', only_data= True, links_fields='blanc', only_fields=set(), with_fields={})`
+### **`update_weights`** 
+#### `(row_num =0, attr_name='', update_weights={}, delete_weights= {})`
+Universal method for changing the RTA field  (data type `*weight`)  values of a table row.
+#### R e c e i v e s
+- `row_num` - row number;
+- `attr_name` - HT attribute (RTA) name;
+- `update_weights` - _dictionary_ of the numbered links to add/update field value;
+- `delete_weights` - _dictionary_ of the numbered links to remove from field value.
+
+The elements of `update_weights` and `delete_weights` _dictionaries_ are specified as follows:
+* _key_ is the name of the **target** table (symboilc MAF name),
+* _value_:
+    * for update_weights: the dictionary `{ row_num: weight, ...., row_num: weight }` in the target table;
+    * for delete_weights:
+      *  the set of row numbers in the target table;
+      * "all" - remove all references to rows in target  table;
+      * `set()` - do not change references to rows in target table.
+
+For `delete_weights`, instead of a _dictionary_, you can specify `delete_weights="all"`, which will reset the entire value of the RTA field to null.
+#### R a i s e s
+  * `HTMS_Mid_Err`- error.
+#### R e t u r n s
+  * `True` \- success; 
+### &nbsp;
+### **`single_weight`** 
+#### `(row_num =0, attr_name='',  to_table ='', to_row=0)`
+Updating one numbered link value. 
+#### R e c e i v e s
+- `row_num` - Can take three kinds of  values: 
+  * row number - to add a new weight in specified table;
+  * -row number - to delete weight to specified row in specified table; 
+  * 0 - to delete all weight to rows in specified table; 
+- `attr_name` - HT attribute (RTA) name (data type `*weight`) ;
+- `to_table`:
+  * _str_ - table name, or 
+  * _object_ - table instance;
+- `to_rows` - set of the rows numbers.  
+### &nbsp;
+### **`multi_weight`** 
+#### `(row_num =0, attr_name='',  to_table ='', to_rows=())`
+Most convenient method for updating weights. Replaces the use of the `update_weights` method in the most common cases.
+#### R e c e i v e s
+- `row_num` - row number;
+- `attr_name` - HT attribute (RTA) name (data type `*weight`) ;
+- `to_table`:
+  * _str_ - table name, or 
+  * _object_ - table instance;
+- `to_rows` - set of the rows numbers.
+
+If `to_rows=()` then method deletes all weight from the field to table `to_table`.
+
+### &nbsp;
+### **`copy_table`** 
+#### `(new_table_name='', only_data= True, links_fields='blanc', weights_fields='blanc', only_fields=set(), with_fields={})`
 Copy a table (create a new one).
 #### R e c e i v e s
 #### Required parameters
@@ -312,7 +401,10 @@ Copy a table (create a new one).
   * `False` - otherwise.  
 - `links_fields` (can only be applied if `only_data=False`):
   * `"blanc"` - the copy should keep the RTA fields, but with empty values;
-  * `"full"` or `"ref"` - links are copied in an unchanged form.  
+  * `"full"` or `"ref"` - numbered links are copied in an unchanged form.  
+- `weights_fields` (can only be applied if `only_data=False`):
+  * `"blanc"` - the copy should keep the RTA fields, but with empty values;
+  * `"full"` or `"ref"` - numbered links are copied in an unchanged form.  
 - `only_fields` ( _str_ or _set_ ) - either the name of a table data attribute (not link attribute), or a set of such names. The set of table data columns that will be present in new table. If the value is an empty set (by default), then the new table will be created with all copied table attributes;
 - `with_fields` - a _dictionary_ with search patterns (see `sieve` method above).
 #### R a i s e s
@@ -321,7 +413,7 @@ Copy a table (create a new one).
   * `True` \- success.
 ### &nbsp;
 ### **`copy_row`** 
-#### `(nrow=-1, after_row=-1, only_data= True, links_fields='blanc', only_fields=set())`
+#### `(nrow=-1, after_row=-1, links_fields='blanc', weights_fields='blanc', only_fields=set())`
 Copy a row (create a new one). **Attention!**  All fields with "file" DTA not copied and its values will be setted to null in the copy of row.
 #### R e c e i v e s
 #### Required parameters
@@ -332,15 +424,40 @@ Copy a row (create a new one). **Attention!**  All fields with "file" DTA not co
 - `links_fields`:
   * `"blanc"` - the copy should keep the RTA fields, but with empty values;
   * `"full"` or `"ref"` - links are copied in an unchanged form;  
-- `only_data` - **obsolete parameter, now not used in the algorithm**.
+- `weights_fields`:
+  * `"blanc"` - the copy should keep the RTA fields, but with empty values;
+  * `"full"` or `"ref"` - links are copied in an unchanged form;  
+- `only_data` - **obsolete parameter, now not used in the version 3**.
 #### R a i s e s
   * `HTMS_Mid_Err`- error.
 #### R e t u r n s
   * `True` \- success.
 ### &nbsp;
+### **`read_rows`** 
+#### `(rows=set(), from_row=1, quantity=1, links_fields=False, weights_fields=False,  only_fields=set())`
+Reads the values of all or the specified fields from the specified range of table rows.
+**Attention!**  All fields with "file" DTA not copied and its values will be setted to null in the copy of row.
+#### R e c e i v e s
+#### Required parameters
+- one of two alternatives: 
+  * `rows`- set with rows numbers;
+  * `from_row` (_int_) - first row number, `quantity` (_int_) - quantity of the rows.
+#### Additional parameters
+- `links_fields` - include or not link fields :
+  * `"True"` ;
+  * `"False"`;  
+- `weights_fields`  - include or not numbered link fields:
+  * `"True"` ;
+  * `"False"`;  
+- `only_fields` - .
+#### R a i s e s
+  * `HTMS_Mid_Err`- error.
+#### R e t u r n s
+  * Dictionary of the dictionaries - `{ row number: {attr_name:value, ...}, ...}`.
+### &nbsp;
 ### **`row_tree`** 
 #### `(nrow=-1, levels_source=-1, levels_ref=-1, only_fields=set(), with_fields={})`
-Construction (forming) of direct waves and/or reverse waves on the links of `nrow` row. This recursive method replaces the search instruction in relational databases and is used to search or filter information.
+Construction (forming) of direct waves and/or reverse waves on the links (simple and numbered) of `nrow` row. This recursive method replaces the search instruction in relational databases and is used to search or filter information.
 #### R e c e i v e s
 #### Required parameters
 - `nrow` (_int_)- number of row from which the wave(-s) propagates;
@@ -353,8 +470,8 @@ Construction (forming) of direct waves and/or reverse waves on the links of `nro
   * `-1` (by default) - direct waves propagation is not limited;
   * `0`  -  direct waves propagation not need;
   * `>0` - maximum graph node level for each direct wave. 
-- `only_fields` ( _set_ ) - the set of the names of RTA, thats will used for direct and backward waves forming. If `set()` (by default) - all RTAs will be used.
-- with_fields={} - **obsolete parameter, now not used in the algorithm**.
+- `only_fields` ( _set_ ) - the set of the names of RTA (data types `*link` and/or `*weight`), thats will used for direct and backward waves forming. If `set()` (by default) - all RTAs will be used.
+- with_fields={} - **obsolete parameter, now not used in version 3*.
 #### R a i s e s
   * `HTMS_Mid_Err`- error.
 #### R e t u r n s
@@ -367,10 +484,10 @@ Construction (forming) of direct waves and/or reverse waves on the links of `nro
 ### &nbsp;
 
 ____________________
-####  Copyright 2018-2021 [Arslan S. Aliev](http://www.arslan-aliev.com)
+####  Copyright 2019-2022 [Arslan S. Aliev](http://www.arslan-aliev.com)
 
 #####  Software Licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#####  htms_mid API v.2.3.1, readme.md red. 31.08.2021
+#####  htms_mid API v.3.1.0, readme.md red. 07.08.2022
 
 
