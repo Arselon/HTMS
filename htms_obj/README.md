@@ -9,16 +9,18 @@
   * creating an instance of a specific database (HT) in RAM;
   * mapping from the program code objects to rows of the table, and vice versa.
 ##  Structure
-  PyPI package `htms-obj` includes modules:
+  Package includes modules:
 -    `htorm.py` - contains classes `HT_Obj` and `Obj_RAM`;
 -    `htms_par_obj.py` - contains class `HTMS_User_Err` for error processing, derived class from `Exception` system class. 
 #### &nbsp;
 ## Class **`HT_Obj(HTdb)`**
-### `(server='', db_root='', db_name='', jwtoken="", mode='wm', cage_name='', new=False, zmq_context=False)`
+### `(server='', db_root='', db_name='', jwtoken="", mode='wm', cage_name='', new=False, zmq_context=False, local_root='')`
 #### &nbsp;
 The `HT_Obj` derives from `HTdb` class (HTMS middle level) and inherits all of its attributes and methods. As well as `HTdb` it is used to create a specific object to model a specific database and is necessary when creating and using instances of the class `Obj_RAM`.
 ### Required parameters
-- `server` ( _str_ ) - IP address (or DNS) of the file server with the HT;  
+- one of two alternatives (see https://github.com/Arselon/Cage/blob/master/README.md):
+  * `server` ( _dict_ ) - a dictionary with the addresses of the Cage servers used, where the _key_ is the _conditional name_ of the server (server name used in program code of the application), and the _value_ is a string with _real server address: `ip address:port`_ or _` DNS:port `_. Matching names and real addresses is temporary, it can be changed (by default `{"default_server_and_main_port": DEFAULT_SERVER_PORT}`); 
+  * `local_root` ( _str_ ) - full path (URL) to the folder with the database files on the local computer. A non-empty valid value for this parameter enables the fileserver **emulation mode** and invalidates the parameters `server`, `zmq_context` and `jwtoken`;  
 - `db_root` ( _str_ ) - the path to HT files on the file server;
 - `db_name` ( _str_ ) - the symbolic name of the HT (used to identify files on servers); 
 - `jwtoken` ( _object_ ) - JSON Web Token (see https://pyjwt.readthedocs.io/en/latest/). 
@@ -38,7 +40,22 @@ It is used in the file servers to identify client applications. It is passed to 
 ### Attributes
 `HT_Obj`attributes inherited from the class `HTdb` (mid-level HTMS). 
 ### &nbsp;
-## Class **`Obj_RAM(TABLE)`** 
+### Main methods
+#### &nbsp;
+### **`getinstances`** 
+#### `()`
+Class instances generator.
+#### Y i e l d s
+- HT_db instance object
+#### &nbsp;
+### **`open_table`** 
+#### `(t_name='')`
+Create instance of `Table` class (HTMS middle level)
+#### R e t u r n s
+  * `Table instance` \- success; 
+  * `False` \- error. 
+### &nbsp;
+## Class **`Obj_RAM(Table)`** 
 ### `(table='', only_fields=set())`
 #### &nbsp;
 The Obj_RAM derives from `Table` class (HTMS middle level) and inherits all of its attributes and methods. It is used for operations on a specific table in a specific database. With Obj_RAM class the objects are "virtually" mapped (transformed) from the program code to rows of the table, and vice versa. Each object, an instance of this class, either corresponds to a row of a certain table with a subset of its fields (in the simplest case with the entire set of the fields), or serves to add a new row to the table.
@@ -57,6 +74,13 @@ Each `Obj_RAM` has the following attributes:
   * `HT_Obj_name` \- symbolic HT name
 ### &nbsp;
 ### Main methods
+#### &nbsp;
+### **`getinstances`** 
+#### `()`
+Class instances generator.
+#### Y i e l d s
+- HT_db instance object
+#### &nbsp;
 ### **`get_from_table`** 
 #### `(rows=(), with_fields={},  modality='all', res_num=Types_htms.max_int4, update=False)` 
 This is a method for mapping row(s) of a table into objects in RAM, which creates “empty” instances, physically reads data from the table in the database, and fills the fields of instances with these data. The only data type that is not physically read in the RAM is files. Instead of being in the body of the file itself, the file descriptor is written to the object.
@@ -92,45 +116,57 @@ The method creates a row object in RAM with empty attribute values and with `id=
 #### R e c e i v e s
 - `attr_name` \- symbolic attribute name.
 #### R e t u r n s
-Tuple with two items:
-- unique attribute number;
-- attribute data type ("byte1", "byte4", "byte8", "utf50", "utf100", "int4", or other - see full description of HTMS data types in low level HTMS docs).
+* Tuple with two items:
+  - unique attribute number;
+  - attribute data type ("byte1", "byte4", "byte8", "utf50", "utf100", "int4", or other - see full description of HTMS data types in low level HTMS docs);
+* `()` - if error.
 #### &nbsp;
 ### **`get_table_object`** 
 #### `()` 
 The method is used to get an object of the `Table` class, from which it was inherited the instance of the class `Obj_RAM` (see description of the `Table` class in middle level HTMS docs.
 #### R e t u r n s
-`Table` instance in RAM.
+* `Table` instance in RAM;
+* `None` - if error.
 #### &nbsp;
 ### **`get_HT_Obj`** 
 #### `()` 
 The method is used to get an object of the `HT_Obj` class, which corresponds to the HT, to which the table belongs from which `Obj_RAM` instance was inherited.
 #### R e t u r n s
-`HT_Obj` instance.
+* `HT_Obj` instance.
+* `None` - if error.
 #### &nbsp;
 ### **`link`** 
 #### `(link_field='', to_table_objects=())` 
 Method is used to add (update) links between objects in RAM. It updates the field value in the object for the specified `link_field` and adds links to the specified objects (rows) of the tables. 
 #### R e c e i v e s
-- `link_field` \- the symbolic attribute name; 
-- `to_table_objects` \- the list with `Obj_RAM` objects;
+- `link_field` \- the symbolic attribute (`*link` data type) name; 
+- `to_table_objects` \- the tuple, list or set with `Obj_RAM` objects;
+#### R e t u r n s
+* `True` - if success;
+* `raise HTMS_Mid_Err : 40-44` - if error.
 #### &nbsp;
 ### **`unlink`** 
 #### `(link_field ='', to_table_objects= ())` 
 Method by the specified attribute name (table field with links) deletes links to the specified `Obj_RAM` objects in RAM.
 #### R e c e i v e s
 - `link_field` \- the symbolic attribute name; 
-- `to_table_objects` \- the list with `Obj_RAM` objects;
+- `to_table_objects` \- the list, tuple or set with `Obj_RAM` objects;
+#### R e t u r n s
+* `True` - if success;
+* `raise HTMS_Mid_Err : 60-64` - if error.
 #### &nbsp;
-### **`ref`**
+### **`link_refs`**
 #### `(link_field='', only_fields=set(), with_fields={}, ref_class=None, res_num=Types_htms.max_int4)`  
-Using the specified attribute name (link field) get a list of objects referenced by this object. This is used for navigation in the HT.
+Using the specified attribute name (`*link` field) get a list of objects referenced by this object. This is used for navigation in the HT.
 #### R e c e i v e s
 - `link_field` \- the symbolic attribute name; 
 - `only_fields` - as for `Obj_RAM` initialization;
 - `with_fields` \- as for `get_from_table` method;
 - `ref_class` \- restricts the classes of tables from which the list of referenced objects will be formed to one explicitly specified; 
 - `res_num` \- if explicitly setted as a integer number, the method will return as a result a list of objects no longer than the value of this parameter, by default it is equal to the maximum possible number of rows in HTMS tables.
+#### R e t u r n s
+* list of Obj_RAM instances;
+* `raise HTMS_Mid_Err : 80-83` - if error.
 #### &nbsp;
 ### **`source`**
 #### `(source_class=None, only_fields=set(), with_fields={}, res_num=Types_htms.max_int4)`  
@@ -140,21 +176,85 @@ Get a list of objects that refer to this.
 - `only_fields` - as for `Obj_RAM` initialization;
 - `with_fields` \- as for `get_from_table` method;
 - `res_num` \- as for `link` method.
+#### R e t u r n s
+* list of Obj_RAM instances;
+* `raise HTMS_Mid_Err : 95-98` - if error.
 #### &nbsp;
 ### **`delete`**
 #### `()`  
 Delete the row in the table that corresponds with the "row" object. The object in RAM is **not deleted**.
+#### R e t u r n s
+* `True`;
+* `raise HTMS_Mid_Err : 90` - if error.
 #### &nbsp;
 ### **`save`**
 #### `()`  
 Save the object in a table row (update its fields) if the object has correct identifier field `Obj_RAM.id`. If `Obj_RAM.id==0 or None`, then a new row is added to the table (at the end) and the value `Obj_RAM.id` an equal number of table rows plus one is set.
+#### R e t u r n s
+* `True`;
+* `raise HTMS_Mid_Err : 92-94` - if error.
+
+#### &nbsp;
+### **`about`**
+Return information about instance Obj_RAM (for debugging)
+#### `()`  
+#### R e t u r n s
+* String with information for printing
+
+#### &nbsp;
+### **`weight`**
+#### `(weight_field ='', to_table_objects= ())`  
+Method is used to add (update) numbered links (**weights**) between objects in RAM. It updates the field value in the object for the specified `weight_field` and adds numbered links to the specified objects (rows) of the tables.
+#### R e c e i v e s
+- `weight_field` \- the symbolic attribute (`*weight` data type) name; 
+- `to_table_objects` \- the list, tuple or set with pairs `(Obj_RAM instance, weight)`  or one pair `(Obj_RAM instance , weight)`. 
+#### R e t u r n s
+* `True` - if success;
+* `raise HTMS_Mid_Err : 50-55` - if error.
+
+#### &nbsp;
+### **`unweight`** 
+#### `(weight_field ='', to_table_objects= ())` 
+Method by the specified attribute name (table field with numbered links) deletes numbered links to the specified `Obj_RAM` objects in RAM.
+#### R e c e i v e s
+- `weight_field` \- the symbolic attribute (`*weight` data type) name; 
+- `to_table_objects` \- the list, tuple or set with `Obj_RAM` objects;
+#### R e t u r n s
+* `True` - if success;
+* `raise HTMS_Mid_Err : 70-75` - if error.
+
+#### &nbsp;
+### **`weight_change`**
+#### `(weight_field ='', to_RAM_objects= {})`  
+Method is used to update weights between objects in RAM. It updates the real number (weight) in field value in the object for the specified `weight_field`.
+#### R e c e i v e s
+- `weight_field` \- the symbolic attribute (`*weight` data type) name; 
+- `to_RAM_objects` \- the dictionary with elements `Obj_RAM instance: weight`.
+#### R e t u r n s
+* `True`
+* `raise HTMS_Mid_Err : 100-104` - if error.
+
+#### &nbsp;
+### **` weight_refs`**
+#### `(weight_field ='', only_fields=set(),  with_fields={}, ref_class=None, res_num=Types_htms.max_int4)`  
+Using the specified attribute name (`weight` field) get a list of objects referenced by this object. This is used for navigation in the HT.
+#### R e c e i v e s
+- `weight_field` \- the symbolic attribute name; 
+- `only_fields` - as for `Obj_RAM` initialization;
+- `with_fields` \- as for `get_from_table` method;
+- `ref_class` \- restricts the classes of tables from which the list of referenced objects will be formed to one explicitly specified; 
+- `res_num` \- if explicitly setted as a integer number, the method will return as a result a list of objects no longer than the value of this parameter, by default it is equal to the maximum possible number of rows in HTMS tables.
+#### R e t u r n s
+* list of Obj_RAM instances;
+* `raise HTMS_Mid_Err : 85-88` - if error.
+
 ### &nbsp;
 
 ____________________
-####  Copyright 2018-2021 [Arslan S. Aliev](http://www.arslan-aliev.com)
+####  Copyright 2019-2022 [Arslan S. Aliev](http://www.arslan-aliev.com)
 
 #####  Software Licensed under the Apache License, Version 2.0 (the "License"); you may not use this software except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#####  htms_obj API v.2.3.0, readme.md red. 30.08.2021
+#####  htms object API v.3.1.0, readme.md red. 10.08.2022
 
 
