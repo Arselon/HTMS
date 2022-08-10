@@ -1,9 +1,9 @@
 
 __title__ = 'htms_obj'
-__version__ = '2.3.0'
+__version__ = '3.1.0'
 __author__ = 'Arslan Aliev'
 __license__ = 'Apache License, Version 2.0'
-__copyright__ = 'Copyright (c) 2018-2021 Arslan S. Aliev'
+__copyright__ = 'Copyright (c) 2018-2022 Arslan S. Aliev'
 
 from .htorm 	import (
 	HT_Obj,
