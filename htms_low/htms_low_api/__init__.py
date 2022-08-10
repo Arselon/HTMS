@@ -1,9 +1,9 @@
 
 __title__ = 'htms_low_api'
-__version__ = '2.3.1'
+__version__ = '3.1.0'
 __author__ = 'Arslan Aliev'
 __license__ = 'Apache License, Version 2.0'
-__copyright__ = 'Copyright (c) 2018-2021 Arslan S. Aliev'
+__copyright__ = 'Copyright (c) 2018-2022 Arslan S. Aliev'
 
 from .htms_par_low 	import (
 	PAGESIZE1,
@@ -27,7 +27,7 @@ from .htms_par_low 	import (
 from .htms_par_low 	import HTMS_Low_Err  
 from .data_types 	import Types_htms
 from .funcs 		import match, links_dump, ht_dump
-from .ht 			import HT, rename_ht, delete_ht, get_maf, compress_ht, deepcopy_ht
+from .ht 			import HT, get_maf, rename_ht, delete_ht, get_maf, compress_ht, deepcopy_ht
 from .maf 			import MAF
 
 __all__ = (
