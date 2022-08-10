@@ -22,6 +22,7 @@ __all__ = (
 	"HTdb", 
 	"Links_array",
 	"Links_tree",
+    "Weights_tree",
 	"Table",
 	"DEBUG_DELETE_ROW_1",
 	"DEBUG_DELETE_FIELD_1",
