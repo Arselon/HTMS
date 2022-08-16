@@ -75,6 +75,13 @@ Removes the HT attribute at the **logical level** by its name or internal id num
 #### R e t u r n s
   * `True` \- success; 
   * `False` \- error.
+#### &nbsp;
+### **`open_table`** 
+#### `(t_name='')`
+Create instance of `Table` class
+#### R e t u r n s
+  * `Table instance` \- success; 
+  * `False` \- error. 
 ### &nbsp;
 ## Class **`Links_array`**
 ### `(links =())`
