@@ -47,13 +47,6 @@ It is used in the file servers to identify client applications. It is passed to 
 Class instances generator.
 #### Y i e l d s
 - HT_db instance object
-#### &nbsp;
-### **`open_table`** 
-#### `(t_name='')`
-Create instance of `Table` class (HTMS middle level)
-#### R e t u r n s
-  * `Table instance` \- success; 
-  * `False` \- error. 
 ### &nbsp;
 ## Class **`Obj_RAM(Table)`** 
 ### `(table='', only_fields=set())`
