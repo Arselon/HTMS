@@ -7,7 +7,7 @@
   * CRUDE (create, read, update and delete) operations at the physical level with attributes, tables, with rows in tables, with data and links in the fields;
   * operations with entire HT (as sets of the files on servers): renaming, copying, compressing, removing. 
 ##  Structure
-  Package `htms-low-api` includes modules:
+  Package includes modules:
 -    `data_types.py` - contains class `Types_htms` describing all internal (embedded) HTMS data types;
 -    `funcs.py` - contains system function `match` for searching (filtering) table rows with accordance of match patterns and service finctions `links_dump` and `ht_dump` for degugging printing;
 -    `ht.py` - contains class `HT`;
@@ -108,8 +108,8 @@ Physical row numbers can obviously change when you delete old or insert (not at 
 `utf100` |  UTF-8 string (without BOM) - up to 100 characters | 200 | 200 | b'\xFF'*200 |  
 `time` |  `time.time()` UTC as a float  | 8 | 8 | 0.0 |  
 `datetime` |  date and time in user format - UTF-8 string (without BOM) - up to 25 characters | 50 | 50 | b'\xFF'*50 |   
-`*link` |  offset and length of the "link's block" in the cf file  | 16 | 8 | (-1,-1) |   
-`*weight` |  offset and length of the "weight's block" in the cf file  | 16 | 12 | (-1,-1, 0.0) |   
+`*link` | simple link data type - pair of integers: offset and length of the "link's block" in the cf file  | 16 | 8 | (-1,-1) |   
+`*weight` | weighted link data type - pair of integers: offset and length of the "weight's block" in the cf file | 16 | 12 | (-1,-1, 0.0) |   
 `*byte` |  an array of bytes of variable length (from 0 to 9223372036854775807) | 16 | 1 | b'\x00' |    
 `*utf` |  UTF-8 string (without BOM) | 16 | 2 | b'\xFF' |    
 `*int4` |  array of integers of variable length | 16 | 4 | 2147483647(*) |    
